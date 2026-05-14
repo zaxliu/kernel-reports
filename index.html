@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kernel Reports · Agent-loop GPU Kernel Optimization</title>
+<style>
+:root {
+  --bg: #0b1020; --bg2: #0f172a; --card: #111827; --border: #1f2937;
+  --text: #e5e7eb; --dim: #94a3b8; --muted: #64748b; --accent: #38bdf8;
+  --green: #10b981; --indigo: #6366f1; --amber: #f59e0b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue",
+  "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14.5px; line-height: 1.6; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; background: #1e293b; padding: 1px 6px; border-radius: 4px;
+  border: 1px solid #334155; }
+.container { max-width: 920px; margin: 0 auto; padding: 56px 24px 96px; }
+.hero { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  border: 1px solid var(--border); border-radius: 14px; padding: 32px 36px;
+  margin-bottom: 32px; }
+.hero h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #38bdf8, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero .sub { color: var(--dim); font-size: 14px; }
+.report-grid { display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.report { background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px 24px; transition: border-color 0.15s; }
+.report:hover { border-color: var(--accent); }
+.report.disabled { opacity: 0.45; }
+.report h2 { margin: 0 0 6px; font-size: 18px; color: #f8fafc; }
+.report .tag { color: var(--dim); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 10px; font-family: "JetBrains Mono", monospace; }
+.report p { color: #cbd5e1; margin: 0 0 14px; font-size: 13.5px; }
+.report .stat { color: var(--dim); font-size: 12.5px; margin-bottom: 14px; }
+.report .stat b { color: var(--green); }
+.report .open { display: inline-block; padding: 7px 14px;
+  border: 1px solid var(--accent); color: var(--accent); border-radius: 8px;
+  font-size: 13px; }
+.report .open:hover { background: rgba(56,189,248,0.08); text-decoration: none; }
+.report.disabled .open { border-color: var(--muted); color: var(--muted);
+  pointer-events: none; }
+footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 56px;
+  padding-top: 24px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <h1>Kernel Reports</h1>
+    <div class="sub">
+      Agent-loop driven GPU kernel optimization benchmark · 8× RTX 5090 ·
+      <a href="https://github.com/ScalingIntelligence/KernelBench" target="_blank">KernelBench</a>
+      L1 / L2 / L3 across ako4all, AutoKernel (program_md / program_kb)
+      and KernelAgent
+    </div>
+  </div>
+
+  <div class="report-grid">
+    <div class="report">
+      <h2>L1 完整评测报告</h2>
+      <div class="tag">100 题 · 3 框架 · fp32 strict 复测</div>
+      <p>对 ako4all / AutoKernel program_md / program_kb 的 100 题逐题分析,
+        含 fp32 strict atol=1e-4 三层复测、verdict 分类、假阳性聚合
+        以及 149 个 framework-problem 段的真实 kernel.py 代码。</p>
+      <div class="stat">
+        ako4all <b>77%</b> · program_md 42% · program_kb 28%
+      </div>
+      <a class="open" href="l1/">查看报告 →</a>
+    </div>
+
+    <div class="report disabled">
+      <h2>L2 完整评测报告</h2>
+      <div class="tag">100 题 · 3 框架 · 制作中</div>
+      <p>L2 (fused pattern) 100 题已完成评测和三层复测,
+        报告正在生成。</p>
+      <div class="stat">即将上线</div>
+      <a class="open" href="l2/">查看报告 →</a>
+    </div>
+
+    <div class="report disabled">
+      <h2>L3 完整评测报告</h2>
+      <div class="tag">50 题 · 模型级 · 排队中</div>
+      <p>L3 (模型级) 评测尚未启动。</p>
+      <div class="stat">未开始</div>
+      <a class="open" href="l3/">查看报告 →</a>
+    </div>
+  </div>
+
+  <footer>
+    Generated from <code>better_kernels</code> /
+    <a href="https://github.com/zaxliu/kernel-reports" target="_blank">github source</a>
+  </footer>
+</div>
+</body>
+</html>
