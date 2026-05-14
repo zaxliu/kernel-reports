@@ -453,6 +453,8 @@ section.cases strong { color: #f1f5f9; }
 <li><strong>Optimization 期约束</strong>: ① 必须用 <code>ncu</code> profile，不能瞎改 ② 必须参考 <code>context/</code>/<code>HINTS.md</code>/历史 attempts/WebSearch ③ 必须遵守 <code>HINTS.md</code> 中的 stall rules。</li>
 <li><strong><code>HINTS.md</code> Stall Rules</strong>: ① Iter 1 之前先 <code>ncu</code> profile baseline ② <strong>连续 3 iter 无 improvement → 强制重新 <code>ncu</code> + WebSearch + 回读 <code>ITERATIONS.md</code> patterns + plan before continuing</strong>。这是 ako4all 在长 trajectory 中能从 fp16 失败回退到 TF32 / 切换策略的核心机制。</li>
 <li><strong>未在 prompt 出现的东西</strong>: dtype cast 推荐、tensor core 推荐、specific BLOCK_SIZE 建议。整套 prompt 不告诉 LLM &quot;怎么改&quot;，只告诉它&quot;必须留痕、必须 profile、必须诚实&quot;。</li>
+<li><strong>WebSearch — 允许但实测未触发</strong>: prompt 在两处显式鼓励调用 WebSearch（<code>TASK.md:25</code> 列为可用信息源、<code>HINTS.md:4</code> stall rule 建议 &quot;use WebSearch for new ideas&quot;）。本评测的外层 agent 是 Claude Code，自带 WebSearch + WebFetch 工具，技术上随时可调。<strong>但服务器上全部 100 题 <code>ITERATIONS.md</code> 全文 grep <code>websearch / arxiv / developer.nvidia / github.com / stackoverflow</code> → 0 命中</strong>；本地 3 个深度案例 (P40/P15/P14) 的 <code>kernel.py</code> 注释也无任何 URL/paper 引用。结合 ITERATIONS.md 强制写出 Hypothesis 的留痕约定（如果引了外部资料应该会留痕），可以认定<strong>ako4all 在 L1 评测中的全部优化策略都来自 LLM 权重内的领域记忆 + 当次 ncu profile + 自身 ITERATIONS.md 历史</strong>，WebSearch 始终是一个可用但未启用的备份信号。</li>
+<li><strong>为什么 WebSearch 在 L1 上没被触发</strong>: ① L1 都是教科书级 single-op (matmul / softmax / layernorm / element-wise)，LLM 权重已涵盖；② stall rule 让 LLM 在 &quot;重 ncu profile&quot; 与 &quot;WebSearch&quot; 之间选了更便宜的前者；③ Claude Code 的 WebSearch 默认有用户权限确认，长批跑容易 silent skip。这条对 L2/L3 (fusion / 全架构) 或新硬件特性 (sm_120 TMA/WGMMA) 的题目预期会不同，是 follow-up 评测的观察点。</li>
 </ul>
 </li>
 </ul>
