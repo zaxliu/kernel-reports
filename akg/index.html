@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKG-Agents v2 深度介绍 · 14 天逆向</title>
+<style>
+  :root {
+    --fg: #1d1d1f;
+    --fg-muted: #515154;
+    --bg: #fafafa;
+    --bg-card: #ffffff;
+    --bg-code: #f5f5f7;
+    --bg-codeblock: #1d1d1f;
+    --fg-codeblock: #d6d6d6;
+    --accent: #0066cc;
+    --accent-soft: #e8f1fb;
+    --border: #d2d2d7;
+    --table-header: #f5f5f7;
+    --highlight: #fff8c5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fg: #f5f5f7;
+      --fg-muted: #a1a1a6;
+      --bg: #1d1d1f;
+      --bg-card: #2c2c2e;
+      --bg-code: #3a3a3c;
+      --bg-codeblock: #0d0d0f;
+      --fg-codeblock: #e8e8ea;
+      --accent: #5ac8fa;
+      --accent-soft: #1a2733;
+      --border: #48484a;
+      --table-header: #3a3a3c;
+      --highlight: #6b5d1d;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+    color: var(--fg);
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  h1 {
+    font-size: 2.2em;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    color: var(--fg-muted);
+    font-size: 0.95em;
+    margin: 0;
+  }
+  h2 {
+    font-size: 1.55em;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 1.2em;
+    margin: 28px 0 12px;
+    color: var(--accent);
+  }
+  h4 {
+    font-size: 1.05em;
+    margin: 20px 0 8px;
+  }
+  p { margin: 12px 0; }
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    padding: 2px 6px;
+    background: var(--bg-code);
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--bg-codeblock);
+    color: var(--fg-codeblock);
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 6px 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-header);
+    font-weight: 600;
+  }
+  tr:nth-child(even) td { background: var(--bg-card); }
+  blockquote {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    margin: 16px 0;
+    padding: 12px 20px;
+    color: var(--fg-muted);
+  }
+  blockquote p { margin: 4px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+  .tldr {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 16px 24px;
+    border-radius: 8px;
+    margin: 24px 0;
+  }
+  .tldr h2 { border: none; margin: 0 0 12px; font-size: 1.2em; }
+  .toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin: 24px 0;
+    font-size: 0.92em;
+  }
+  .toc ul { margin: 4px 0; }
+  .toc-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 1em;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.78em;
+    font-weight: 500;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin: 0 4px;
+  }
+  .badge-warn { background: #fff4cd; color: #8a6d1c; }
+  .badge-ok { background: #d4f3e0; color: #1d6b3a; }
+  .badge-no { background: #fde2e2; color: #a02525; }
+  @media (prefers-color-scheme: dark) {
+    .badge-warn { background: #4a3a18; color: #f5d97c; }
+    .badge-ok { background: #1a3a26; color: #7ce0a3; }
+    .badge-no { background: #4a1f1f; color: #ff9b9b; }
+  }
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.88em;
+    text-align: center;
+  }
+  /* 高亮关键句 */
+  mark {
+    background: var(--highlight);
+    padding: 0 4px;
+    border-radius: 3px;
+    color: inherit;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>AKG-Agents v2 深度介绍</h1>
+  <p class="subtitle">一份基于 14 天逆向阅读（2026-05-02 → 2026-05-17）+ 仓库内代码证据的综合介绍 · 适用对象：想 90 分钟内建立 AKG-Agents 完整心智模型的资深开发者</p>
+</header>
+
+<div class="tldr">
+  <h2>TL;DR</h2>
+  <p><strong>AKG-Agents</strong> 是华为 MindSpore SIG 维护的 <strong>Multi-Agent GPU/NPU kernel 自动生成框架</strong>。3 个不可替代的特征：</p>
+  <ol>
+    <li><strong>昇腾 NPU 主战场 + CUDA 兼容</strong>—34 Ascend SKU + 4 CUDA SKU</li>
+    <li><strong>三种优化策略并列</strong>—UCB (Adaptive Search) / 进化 (Evolve) / 长 ReAct (AutoResearch)</li>
+    <li><strong>显式 Skill 系统 + 自动进化</strong>—SKILL.md + SemVer + SkillEvolution 4 模式</li>
+  </ol>
+  <p>战略位置：在「AKG / AutoKernel / KernelAgent / AKO4ALL」四家 LLM kernel gen 框架里，<mark>AKG 工程最重、原创最多（trace / replay_guard / skill-evo / 设备池 / 服务化）</mark>，但 NPU 是主战场，CUDA 是兼容性产物。</p>
+</div>
+
+<div class="toc">
+  <div class="toc-title">目录</div>
+  <ul>
+    <li><a href="#sec-1">1. 项目背景与时间线</a></li>
+    <li><a href="#sec-2">2. 整体架构：三层心智模型</a></li>
+    <li><a href="#sec-3">3. Agent 体系</a></li>
+    <li><a href="#sec-4">4. Skill 系统</a></li>
+    <li><a href="#sec-5">5. Workflow + Trace</a></li>
+    <li><a href="#sec-6">6. Tools + LLM</a></li>
+    <li><a href="#sec-7">7. op/ 场景层：四大 Agent</a></li>
+    <li><a href="#sec-8">8. 算子生成全流程</a></li>
+    <li><a href="#sec-9">9. 三层搜索 (UCB/Evolve/AutoResearch)</a></li>
+    <li><a href="#sec-10">10. 多 DSL + CUDA→Ascend 迁移</a></li>
+    <li><a href="#sec-11">11. 两层运行时：自建 vs 嫁接</a></li>
+    <li><a href="#sec-12">12. workspace 使用态封装</a></li>
+    <li><a href="#sec-13">13. 横向对比 (AKG vs AK/KA/AKO)</a></li>
+    <li><a href="#sec-14">14. SKILL.md 知识库剖析</a></li>
+    <li><a href="#sec-15">15. better_kernels (RTX 5090) 复用清单</a></li>
+    <li><a href="#sec-16">16. 参考资源</a></li>
+  </ul>
+</div>
+
+<h2 id="sec-1">1. 项目背景</h2>
+
+<h3>1.1 演进时间线</h3>
+<pre><code>2.4 前    polyhedral 编译器（AKG 单子项目）
+2.4 后    拆为 AKG-MLIR + AKG-AGENT 双子项目
+2025-06   AKG-Agents v1 初版（自建 ReAct + akg_cli + RAG）
+2025-12   引入 LangGraph 替代自建 Task 调度
+2026-02   v2 重构：拆 core_v2/（通用 runtime） vs op/（场景层）
+2026-03   AutoResearch 上线（长周期 ReAct 旗舰能力）
+2026-04   akg_cli 废弃，交互层让位 OpenCode/Claude Code/Cursor
+2026-05   workspace/ 使用态 + .opencode/.claude/.cursor 三向软链</code></pre>
+
+<h3>1.2 团队与生态位</h3>
+<ul>
+  <li><strong>维护方</strong>：MindSpore SIG（华为）</li>
+  <li><strong>主战场</strong>：昇腾 NPU（Atlas A2/A3、300I DUO、910B / 910_9362-9392 / 950 系列）</li>
+  <li><strong>次战场</strong>：NVIDIA CUDA（兼容性扩展）+ CPU</li>
+  <li><strong>DSL 覆盖</strong>：7 种 — <code>triton_cuda</code> / <code>triton_ascend</code> / <code>cpp</code> / <code>cuda_c</code> / <code>tilelang_cuda</code> / <code>ascendc</code> / <code>pypto</code></li>
+  <li><strong>评测</strong>：KernelBench / sol-execbench / 自家 <code>akg_kernels_bench</code></li>
+</ul>
+
+<h2 id="sec-2">2. 整体架构：三层心智模型</h2>
+<pre><code>┌──────────────────────────────────────────────────────────────────┐
+│  workspace/ (使用态)                                              │
+│   - .opencode/agents/   (4 个 LLM agent，YAML frontmatter 权限白名单) │
+│   - .opencode/skills/   (13 个 SKILL.md，软链到 .claude/.cursor)   │
+│   - AGENTS.md           (26 行薄路由表)                            │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────────────┐
+│  op/ (算子领域)                                                   │
+│   - agents/             (KernelConductor/Designer/Gen + KernelAgent) │
+│   - adaptive_search/    (UCB + SuccessDB + EvolutionController)    │
+│   - evolve.py + sketch.py  (v1 物理岛屿 GA)                        │
+│   - autoresearch/agent/ (长周期 ReAct: loop/turn/skill_pool)       │
+│   - verifier/           (CodeChecker + KernelVerifier + Roofline)  │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │
+┌──────────────────────────┴───────────────────────────────────────┐
+│  core_v2/ (通用 runtime, 2026-02 重构成果)                        │
+│   - agents/             (BaseAgent → ReActAgent，节点优先 6 步循环)   │
+│   - skill/              (loader/installer/registry/selector/hierarchy) │
+│   - tools/              (tool_registry/executor + 11 basic_tools)  │
+│   - llm/                (client/factory/providers，3 档 model_level) │
+│   - langgraph_base/     (state/task/workflow + replay_guard)       │
+│   - filesystem/         (情景记忆：14 数据模型 + CoW 代码快照)         │
+│   - config/             (5 级合并优先链: env > local > proj > user) │
+│   - server/             (Client-Server-Worker + DevicePool)        │
+└──────────────────────────────────────────────────────────────────┘</code></pre>
+
+<blockquote><strong>反直觉命名</strong>：Trace 系统在 <code>filesystem/</code> 下（不是 <code>trace/</code>）；<code>workflows/</code> 是空壳，状态机基类在 <code>langgraph_base/</code>。</blockquote>
+
+<h3>2.1 与 Claude Code 的重合度</h3>
+<ul>
+  <li><span class="badge badge-warn">重叠 ~70%</span> ReAct 主循环 / basic_tools (read/write/edit/scan/grep/bash/...) / token 计数 / 流式输出 / SKILL.md 格式 / 跨工具软链</li>
+  <li><span class="badge badge-ok">原创 ~30%</span> snapshot filesystem trace / replay_guard / SkillEvolution 4 模式 / 设备池 / Server-Worker / 节点优先 ReAct</li>
+</ul>
+
+<h2 id="sec-3">3. Agent 体系（core_v2/agents）</h2>
+
+<h3>3.1 三层 Agent 继承</h3>
+<pre><code>BaseAgent (单次 LLM 调用接口)
+    ↓
+ReActAgent (节点优先 6 步循环)
+    ↓
+领域子类 (KernelGen / Designer / Conductor / KernelAgent ...)</code></pre>
+
+<h3>3.2 ReAct 节点优先 6 步循环</h3>
+<pre><code>1. create_node          (先开 trace 节点)
+2. inject cur_path      (注入上下文)
+3. LLM call             (think)
+4. parse                (act 解析)
+5. exec tool            (observe)
+6. save + update        (持久化 + 更新 state)</code></pre>
+<p>与教科书 ReAct 的差异：<mark>节点先于 LLM 创建</mark>，所以即使 LLM 崩溃也有 trace 可断点续跑。</p>
+
+<h3>3.3 AgentRegistry：Agent-as-Tool 自动转换</h3>
+<ul>
+  <li>所有有 <code>TOOL_NAME</code> 的注册 Agent 被 <code>ReActAgent._load_agent_registry()</code> 自动转成 OpenAI function calling 工具</li>
+  <li>multi-agent 通信走 <strong>LLM 路由</strong>而非 import</li>
+  <li><code>scope=set()</code> 表示全局可见；类级单例，import 即注册</li>
+</ul>
+
+<h2 id="sec-4">4. Skill 系统（core_v2/skill）</h2>
+
+<h3>4.1 SKILL.md 数据模型</h3>
+<p>4+1 层结构：<strong>category</strong>（11 类）/ <strong>group</strong>（5 组）/ <strong>metadata</strong>（自定义）/ <strong>version</strong>（SemVer）+ <strong>structure</strong>（child / default / exclusive）</p>
+
+<h3>4.2 SkillSelector 两阶段筛选</h3>
+<pre><code>阶段 1: 粗筛（4 类 filter AND 组合）
+   metadata_matcher + category_filter (include/exclude)
+   三层 fail-open: context 没指定 / skill 无 metadata / 字段空都放行
+   支持 "all" 通配符 + 逗号分隔多值
+
+阶段 2: LLM 精筛（用户自定义模板，v2 无默认模板）
+   4 级 fallback: 直接 json / ```json 块 / 通用代码块 / 正则花括号
+   失败退回粗筛结果</code></pre>
+
+<h3>4.3 SkillEvolution 4 模式 — AKG 真护城河</h3>
+<table>
+<thead><tr><th>模式</th><th>来源</th><th>何时触发</th><th>输出</th></tr></thead>
+<tbody>
+<tr><td><code>search_log</code></td><td>verification_results.jsonl + speed_up_record.txt + lineage_graph.md</td><td>批跑后 cron</td><td>单调栈过滤进化树 + 注释剥离 + LLM 提炼 → SKILL.md</td></tr>
+<tr><td><code>expert_tuning</code></td><td>对话历史</td><td>用户说"凝练上下文"</td><td>SKILL.md</td></tr>
+<tr><td><code>error_fix</code></td><td>错误日志</td><td>失败后归并</td><td>evolved/error-fix/SKILL.md</td></tr>
+<tr><td><code>organize</code></td><td>已有 SKILL 集合</td><td>维护</td><td>重组目录</td></tr>
+</tbody>
+</table>
+<p><span class="badge badge-no">Claude Code 没有等价机制</span>——只能手动 save。</p>
+
+<h3>4.4 跨工具生态对齐</h3>
+<pre><code>~/.akg/skills/                  ← 全局 skill pool + .registry.json
+   ↑                                       ↑
+   │                                       │软链
+   │                                       │
+.opencode/skills/  ←─软链─→  .claude/skills/  &  .cursor/skills/</code></pre>
+
+<h2 id="sec-5">5. Workflow + Trace</h2>
+
+<h3>5.1 LangGraph 三层抽象</h3>
+<ul>
+  <li><strong>BaseState</strong> — Reducer 语法 <code>Annotated[List[str], add]</code> 让多节点写同字段自动 append</li>
+  <li><strong>Workflow</strong> — StateGraph + Conditional Edge + Checkpointer 断点续跑</li>
+  <li><strong>路由限制</strong> — <code>get_illegal_agents</code> 防 LLM 死循环（默认连续 3 次同 Agent）</li>
+</ul>
+
+<h3>5.2 Trace 系统在 <code>filesystem/</code></h3>
+<ul>
+  <li>14 种数据模型 + 多分叉 / 合并 / 行级 blame</li>
+  <li>持久化：<code>~/.akg/tasks/{task_id}/nodes/{node_id}/{state,result,thinking,code,logs,system_prompts}.json</code></li>
+  <li><strong>CoW 代码快照</strong>：每次代码修改产生一份新拷贝，可回到任意节点 diff</li>
+</ul>
+
+<h3>5.3 replay_guard：multi-agent 回归测试守卫</h3>
+<ul>
+  <li>200 行代码，与 LLM cache 共用 JSON 文件（<code>_node_snapshots</code> key 隔离）</li>
+  <li>专抓"LLM 给同样输出但节点解析出不同结果"这种隐蔽 bug</li>
+  <li>CI 必有 / better_kernels <mark>应整体抄过来</mark></li>
+</ul>
+
+<h2 id="sec-6">6. Tools + LLM</h2>
+
+<h3>6.1 ToolExecutor 4 类分发</h3>
+<pre><code>basic_tool       (read/write/edit/scan/grep/bash/ask_user/load_skill/check_python_code/check_markdown)
+domain_tool      (op/ 层注册)
+call_agent       (Agent-as-Tool)
+call_workflow    (LangGraph workflow as tool)</code></pre>
+
+<h3>6.2 arg_resolver 链式表达式</h3>
+<pre><code>{
+  "node_2": {
+    "tool": "do_something",
+    "args": {
+      "config": "read_json_file('result.json')['key']"  // 直接引用前一节点输出
+    }
+  }
+}</code></pre>
+<p>省一轮 LLM 调用。</p>
+
+<h3>6.3 LLM 层</h3>
+<ul>
+  <li>3 档 <code>model_level</code>：<code>complex</code> / <code>standard</code> / <code>fast</code>，单次调用粒度切换</li>
+  <li>双协议（OpenAI / Anthropic）+ <code>extra_body</code> 透传 reasoning 参数</li>
+  <li><code>cache/replay_catalog</code> 跨会话录制/重放 LLM 调用 — 研究复现 / 调试 / CI 神器</li>
+</ul>
+
+<h2 id="sec-7">7. op/ 场景层：四大 Agent</h2>
+<pre><code>KernelAgent (顶层 ReActAgent)
+   │
+   ├─→ KernelConductor (单次 LLM，调度)
+   │
+   ├─→ KernelDesigner  (单次 LLM，算子规格→tile/调度方案)
+   │
+   └─→ KernelGen      (单次 LLM，方案→DSL 代码)
+            │
+            └─→ stage = initial / debug / optimize / pure-modify
+                       (由输入字段决定)</code></pre>
+<p>KernelGen 三层 skill 分阶段加载：L0 always + L1 LLM 选 guide/example + L2 case；首次选择缓存到 <code>_initial_selection_cache</code> 后续阶段复用。</p>
+
+<h2 id="sec-8">8. 算子生成全流程</h2>
+<pre><code>LLM 生成 code
+   ↓
+CodeChecker      (6 步静态检查，YAML 驱动，不进 GPU)
+   ↓
+KernelVerifier   (三 adapter: backend × dsl × framework 正交分解 + Jinja2)
+   ↓
+Profiler         (profiler_npu warmup+active，L2 清除按 dsl 选)
+   ↓
+Solar Roofline   (roofline_speedup = roofline_time / gen_time)
+   ↓
+error_message → 拼进下次 KernelGen prompt → debug stage</code></pre>
+
+<h3>8.1 与 KernelAgent 关键差距</h3>
+<table>
+<thead><tr><th>维度</th><th>AKG</th><th>KernelAgent</th></tr></thead>
+<tbody>
+<tr><td>独立 CodeChecker</td><td><span class="badge badge-ok">✅ 6 步静态</span></td><td><span class="badge badge-no">❌ 无</span></td></tr>
+<tr><td>Roofline 上界反馈</td><td><span class="badge badge-ok">✅ Solar</span></td><td><span class="badge badge-no">❌ 只 vs baseline</span></td></tr>
+<tr><td>L2 清除策略</td><td><span class="badge badge-ok">✅</span></td><td><span class="badge badge-no">❌</span></td></tr>
+<tr><td>错误分层处理</td><td><span class="badge badge-ok">✅ static/runtime/perf</span></td><td><span class="badge badge-no">❌ 全揉进 ReAct</span></td></tr>
+</tbody>
+</table>
+
+<h2 id="sec-9">9. 三层搜索：AKG 真正的差异化</h2>
+
+<h3>9.1 短周期 — Adaptive Search (UCB)</h3>
+<p><strong>单算子作用域</strong>：<code>(op_name, task_desc)</code> 绑定，存储 <code>~/akg_agents_adaptive_search/&lt;op_name&gt;/&lt;ts&gt;/</code>。</p>
+<table>
+<thead><tr><th>偏离教科书 UCB</th><th>实现</th><th>目的</th></tr></thead>
+<tbody>
+<tr><td>动态 arm 集合</td><td>每轮重 rank</td><td>适应新发现的 skill 组合</td></tr>
+<tr><td>rank-based Q</td><td>controller.py</td><td>让 c=√2 跨算子可移植</td></tr>
+<tr><td>batch 全失败回滚</td><td><code>decrement_selection</code></td><td>不浪费失败的探索预算</td></tr>
+<tr><td>随机扰动 <code>+Uniform(-r,+r)</code></td><td>UCB1 公式后</td><td>弥补 simple regret 弱点</td></tr>
+</tbody>
+</table>
+
+<h3>9.2 中周期 — Evolve</h3>
+<p>双轨：v1 物理岛屿 GA (rounds × islands × parallel_num) vs v2 软岛屿外挂 (parent_id 谱系森林承担岛屿语义)。</p>
+<p>v2 三个 Solver：<strong>S1 LineageAwareParentSelector</strong>（两阶段层间-层内）/ <strong>S2 LineageBoltzmannInspirationSelector</strong>（Boltzmann 采样 + 跨谱系迁移）/ <strong>S3 MultiDimensionalConvergenceDetector</strong>（EXPLORING→WATCHING→STOPPED 三状态机）。</p>
+<p>三处温度 <code>tau / c_local / T</code> 默认 1.5→0.5 共用 progress 指数退火；WATCHING 时 S3 反向发 StrategySignal 主动升温 — <mark>FunSearch / AlphaEvolve 都没有的工程原创</mark>。</p>
+
+<h3>9.3 长周期 — AutoResearch</h3>
+<p>5 步 turn 循环：上下文护栏 → skill 注入 → LLM → tool 分派 → post-eval 钩子。预算 <code>max_turns = max_rounds × 8</code>。</p>
+<p>三大原创：</p>
+<ol>
+  <li><strong>每产物单一写方</strong>：plan.md→FeedbackBuilder / session.json→SessionStore / messages→ConversationBuffer</li>
+  <li><strong>SkillBuilder 无终态</strong>：tier 0/1/2 三级生命周期</li>
+  <li><strong>三层 compact</strong>：micro / auto / force_rebuild + post-compact 5 marker buffer</li>
+</ol>
+
+<h2 id="sec-10">10. 多 DSL + CUDA→Ascend 迁移</h2>
+
+<h3>10.1 7 DSL 统一抽象</h3>
+<p><code>dsl_to_dir_key</code>：<code>triton_ascend → triton-ascend</code>。每 DSL 自带 <code>fundamentals/guides/examples/cases/evolved-*</code> 子目录，<mark>只 <code>triton-ascend</code> 全齐</mark>（CUDA 侧只 guides + 少量 evolved）。</p>
+
+<h3>10.2 CUDA→Ascend 迁移不是翻译</h3>
+<pre><code>Phase 1 (CUDA Worker)
+   generate_reference_with_profile
+        ↓
+   .pt bytes + gpu_kernel_time_us
+
+Phase 2 (NPU 优化)
+   create_cross_platform_config 注入：
+      config['use_reference_data']
+      config['reference_data']
+      config['gpu_kernel_time_us']
+   复用 Day 10 evolve() 主循环但跳过本地 ref
+        ↓
+   extract_best_npu_kernel_time
+   calculate_cross_platform_speedup → GPU/NPU 比率</code></pre>
+<p>Phase 2 KernelGen 完全不知道 Phase 1 用过 triton_cuda skill — NPU 侧不被 CUDA 习惯污染。</p>
+
+<h2 id="sec-11">11. 两层运行时：自建 vs 嫁接</h2>
+<pre><code>                  ┌─────────────────────────────────┐
+                  │  共享层：Skill Pool (SKILL.md)    │
+                  │  ~/.akg/skills/.registry.json    │
+                  └─────────┬─────────────┬──────────┘
+                            │软链         │软链
+   ┌──────────────┐                            ┌──────────────────┐
+   │ 第一层：自建    │                            │ 第二层：嫁接        │
+   │ ReAct runtime│                            │ OpenCode/Claude  │
+   │ (批跑/CI/UCB)│                            │ Code/Cursor (IDE)│
+   └──────────────┘                            └──────────────────┘</code></pre>
+<table>
+<thead><tr><th>维度</th><th>第一层</th><th>第二层</th></tr></thead>
+<tbody>
+<tr><td>入口</td><td><code>op/{adaptive_search,evolve,autoresearch}/</code></td><td><code>workspace/.opencode/agents/*.md</code></td></tr>
+<tr><td>Runtime</td><td><code>core_v2/agents/react_agent.py</code> + LangGraph</td><td>OpenCode/Claude Code CLI</td></tr>
+<tr><td>主调度</td><td>LangGraph StateGraph + checkpointer</td><td>OpenCode agent loop + <code>task()</code> subagent</td></tr>
+<tr><td>适合场景</td><td>批跑、长循环、CI、并发</td><td>手工调优、方案讨论、IDE 内联编辑</td></tr>
+</tbody>
+</table>
+<blockquote><strong>战略动机</strong>：原创 30%（trace/replay/skill-evo/设备池）自家维护；重叠 70%（ReAct/file tools/SKILL.md 格式）嫁接成熟生态。</blockquote>
+
+<h2 id="sec-12">12. workspace 使用态封装</h2>
+
+<h3>12.1 三层封装</h3>
+<pre><code>op/agents/*.py         (444 行库)
+   ↓ 包装
+.opencode/agents/*.md  (181~341 行流程)
+   ↓ 调用
+.opencode/skills/*/SKILL.md  (119~201 行知识/命令)</code></pre>
+<p>YAML frontmatter 的 <code>tools/skills/subagents</code> 是 <strong>runtime 权限白名单</strong>（不是软约束）— 把权限从"prompt 里说不要做"变成"runtime 拒绝"。</p>
+
+<h3>12.2 4 个 entry agent + 13 skill (DAG 不是树)</h3>
+<pre><code>akg-op (primary, 6-Phase pipeline)
+   ├─ skill: akg-env-setup / op-task-extractor / vllm-ascend-operator-fusion / search-workflow
+   └─ subagent: kernelgen
+       └─ skill: kernel-generator / kernel-verifier
+
+postprocess (primary, 按代码路径前缀路由 vllm-ms / vllm-ascend)
+akg-installer (subagent)</code></pre>
+<p>5 个孤儿 skill（不在任何 agent 白名单）：<code>kernel-designer</code> / <code>op-test</code> / <code>performance-optimize-verify</code> / <code>sparse_quant</code> / <code>skills_creator</code> — 用户直接调。</p>
+
+<h2 id="sec-13">13. 横向对比 (4 框架 × 7 维度)</h2>
+<table>
+<thead><tr><th>维度</th><th>AKG</th><th>AutoKernel</th><th>KernelAgent</th><th>AKO4ALL</th></tr></thead>
+<tbody>
+<tr><td>目标硬件</td><td>Ascend NPU 主战场 (34 SKU) + CUDA 兼容</td><td>NVIDIA + AMD ROCm</td><td>NVIDIA + Intel XPU</td><td>NVIDIA only</td></tr>
+<tr><td>Agent 拓扑</td><td>4 Agent 分层 + workspace 6-Phase</td><td>单 Agent + 单文件</td><td>6 段 pipeline + Composer</td><td>零基础设施</td></tr>
+<tr><td>搜索策略</td><td><strong>三种并列</strong> UCB+Evolve+AutoResearch</td><td>贪心 + Amdahl 排序</td><td>Beam search</td><td>无显式搜索</td></tr>
+<tr><td>Skill / 知识</td><td>显式 Skill + SkillEvolution 4 模式</td><td>静态 program.md 6-tier</td><td>Jinja + BottleneckAnalyzer</td><td>TASK.md + HINTS.md</td></tr>
+<tr><td>DSL 覆盖</td><td>7 种统一抽象</td><td>Triton + CUDA C++</td><td>Triton only</td><td>agent 自选</td></tr>
+<tr><td>评测集</td><td>KernelBench + sol-execbench + akg 自家</td><td>KernelBench fast_p</td><td>KernelBench L1-L3 + e2e</td><td>三选一</td></tr>
+<tr><td>工程成熟度</td><td>Server-Worker + LangGraph + trace + DevicePool</td><td>单机 + TSV + HF Hub</td><td>Gradio UI ×3 + artifacts 仓</td><td>零基础设施</td></tr>
+</tbody>
+</table>
+
+<h3>四家"角色"压缩</h3>
+<ul>
+  <li><strong>AKG</strong> = Ascend 视角下的完整产品级 multi-agent kernel gen 框架（重，原创最多）</li>
+  <li><strong>AutoKernel</strong> = Karpathy autoresearch 的 GPU kernel 移植版（理念主导）</li>
+  <li><strong>KernelAgent</strong> = PyTorch 官方多 Agent + Triton 全栈方案（KernelBench 专精）</li>
+  <li><strong>AKO4ALL</strong> = Agent shell 极简实验（零基础设施）</li>
+</ul>
+
+<h2 id="sec-14">14. SKILL.md 知识库剖析</h2>
+
+<h3>14.1 NVIDIA 侧资产盘点（32 份 / 21K 字 / ~30-50K tokens）</h3>
+<table>
+<thead><tr><th>类别</th><th>数量</th><th>备注</th></tr></thead>
+<tbody>
+<tr><td>硬件 SKU markdown</td><td>4</td><td>A100/H20/L20/RTX3090（缺 RTX5090/H100/B200）</td></tr>
+<tr><td>triton-cuda guides</td><td>12</td><td>最齐（attention/matmul/reduce/elementwise/memory/grid-config/debugging/...)</td></tr>
+<tr><td>triton-cuda evolved</td><td>1</td><td><code>triton-cuda-error-fix</code> — 真护城河</td></tr>
+<tr><td>cuda-c guides</td><td>5</td><td>basics/api/patterns/optimization/examples-torch</td></tr>
+<tr><td>tilelang-cuda guides</td><td>7</td><td>basics/api/patterns/memory/synchronization/optimization/examples-torch</td></tr>
+<tr><td>format 规范</td><td>3</td><td>triton-torch / triton-mindspore / cuda-c-torch</td></tr>
+</tbody>
+</table>
+
+<h3>14.2 独特度量化（按层）</h3>
+<table>
+<thead><tr><th>类别</th><th>独特度</th><th>占总字数</th><th>理由</th></tr></thead>
+<tbody>
+<tr><td>硬件 SKU</td><td>5%</td><td>2%</td><td>纯数据，公开 whitepaper</td></tr>
+<tr><td>basics/api/patterns</td><td>15%</td><td>35%</td><td>LLM 已知</td></tr>
+<tr><td>算子专题 (matmul/attention/reduce)</td><td>25-35%</td><td>15%</td><td>算法公开 + 配置表/优化清单半独特</td></tr>
+<tr><td>memory/grid-config/optimization</td><td>30%</td><td>18%</td><td>优化技巧汇总，部分独特</td></tr>
+<tr><td>debugging/patterns</td><td>40-50%</td><td>7%</td><td>checklist 组织独特</td></tr>
+<tr><td>examples-torch</td><td>30%</td><td>19%</td><td>PyTorch 集成 boilerplate</td></tr>
+<tr><td><strong>evolved</strong></td><td><strong>90%</strong></td><td>0.4%</td><td><strong>"踩过坑"真原创</strong></td></tr>
+</tbody>
+</table>
+<p><mark>加权平均独特度：约 22-25%；但工程整理价值 80%+（21K 字若从零 rebuild 约 1-2 人月）。</mark></p>
+
+<h3>14.3 evolved 层是真护城河（举例）</h3>
+<pre><code># 错误：直接使用 tl.tanh
+result = 0.5 * x * (1.0 + tl.tanh(inner))
+
+# 正确：通过 libdevice 调用
+result = 0.5 * x * (1.0 + tl.extra.cuda.libdevice.tanh(inner))</code></pre>
+<p>这种"具体 failure mode → fix"配对是 LLM 训练数据里罕见的，必须真跑过 SkillEvolution.search_log 才得到。</p>
+
+<h2 id="sec-15">15. better_kernels (RTX 5090) 复用清单</h2>
+
+<h3>15.1 直接搬 <span class="badge badge-ok">高价值</span></h3>
+<ul>
+  <li><code>core_v2/langgraph_base/replay_guard.py</code> (200 行) → CI 守护</li>
+  <li><code>op/adaptive_search/ucb_selector.py</code> 的 rank-based Q + 退火 tau → Phase 2 UCB</li>
+  <li><code>core_v2/server/device_pool.py</code> 的 <code>asyncio.Queue</code> → 8×5090 并发分配</li>
+  <li>部分 NVIDIA SKILL.md（算子专题 + debugging + evolved + examples-torch，~60% 体量）</li>
+</ul>
+
+<h3>15.2 改 2-3 行能用 <span class="badge badge-warn">小工程量</span></h3>
+<ul>
+  <li><code>kernel_verifier.py:163</code> arch 白名单加 <code>rtx5090</code></li>
+  <li><code>roofline_utils.py</code> ARCH_ALIAS 加 <code>rtx5090 → a100</code>（先跑通）</li>
+  <li>profiler CUDA 分支 L2 清除 buffer ≥ 128MB（5090 L2 大小）</li>
+</ul>
+
+<h3>15.3 重写 <span class="badge badge-warn">必须</span></h3>
+<ul>
+  <li><code>hardware/CUDA_RTX5090.md</code>（170 SMs / 33.7GB GDDR7 / sm_120 / ~419 TFLOPS FP16 / ~1792 GB/s）</li>
+  <li>自家跑 SkillEvolution.search_log 产 <code>evolved/cuda-rtx5090-*</code> 层</li>
+</ul>
+
+<h3>15.4 砍掉 <span class="badge badge-no">过度设计</span></h3>
+<ul>
+  <li>4 Agent 分层（单机 5090 过度设计；用 AutoKernel 单 Agent 或 KA 中段 3 段更轻）</li>
+  <li>triton_ascend / ascendc / pypto / cpp 后端</li>
+  <li>Client-Server-Worker 拆分（HTTP 协议开销 &gt; 单机进程间通信）</li>
+  <li>SemVer + hierarchy + selector 双阶段筛选（单机用不上，软链 .claude/skills 让 Claude Code 自家 skill discovery 接管）</li>
+</ul>
+
+<h3>15.5 定位一句话</h3>
+<div class="tldr">
+  <p><strong>better_kernels = AutoKernel 骨架 + AKG 搜索心脏 + AKO4ALL 极简精神</strong></p>
+</div>
+
+<h2 id="sec-16">16. 参考资源</h2>
+
+<h3>16.1 关键源码路径（仓库内）</h3>
+<pre><code>experiments/frameworks/akg/akg_agents/
+├── README_CN.md                                          # 项目自介
+├── CLAUDE.md                                             # 开发态约定（不是 LLM 运行时）
+├── docs/v2/CN/                                           # v2 设计文档（11 篇）
+│   ├── Architecture.md / AgentSystem.md / SkillSystem.md
+│   ├── Workflow.md / Trace.md / Configuration.md
+│   ├── KernelAgent.md / KernelDesigner.md / KernelGen.md
+│   ├── AutoResearch.md / SolarRoofline.md / CodeChecker.md
+├── python/akg_agents/
+│   ├── core_v2/{agents,skill,tools,llm,langgraph_base,filesystem,config,server}/
+│   └── op/{agents,adaptive_search,autoresearch,verifier,evolve.py,sketch.py}
+└── workspace/
+    ├── AGENTS.md                                         # 26 行薄路由
+    └── .opencode/{agents,skills}/                        # 13 SKILL.md + 4 agent</code></pre>
+
+<h3>16.2 外部资源</h3>
+<ul>
+  <li>MindSpore AKG SIG: <a href="https://gitcode.com/mindspore/akg">https://gitcode.com/mindspore/akg</a></li>
+  <li>Triton-Ascend: <a href="https://gitee.com/ascend/triton-ascend">https://gitee.com/ascend/triton-ascend</a></li>
+  <li>LangGraph 官方: <a href="https://langchain-ai.github.io/langgraph/">https://langchain-ai.github.io/langgraph/</a></li>
+  <li>ReAct 论文 (Yao et al., 2022): <a href="https://arxiv.org/abs/2210.03629">https://arxiv.org/abs/2210.03629</a></li>
+  <li>FunSearch (Nature 2024): <a href="https://www.nature.com/articles/s41586-023-06924-6">https://www.nature.com/articles/s41586-023-06924-6</a></li>
+  <li>KernelBench (Stanford ICML'25): <a href="https://arxiv.org/abs/2502.10517">https://arxiv.org/abs/2502.10517</a></li>
+</ul>
+
+<h3>16.3 14 天逆向 journal</h3>
+<p><code>~/.claude/courses/Users--lewis--Documents--code--better_kernels--experiments--frameworks--akg/journal.md</code></p>
+<p>包含 Day 0-14 + Day 12.5 bonus 完整 Q&amp;A + Session Summary。</p>
+
+<footer>
+  Compiled 2026-05-17 · 14 天逆向 AKG-Agents v2 · Lewis<br>
+  自包含 HTML，无外部依赖，可离线浏览 / 打印 / 转 PDF
+</footer>
+
+</div>
+</body>
+</html>
