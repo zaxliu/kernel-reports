@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKG-Agents v2 · L1 Re-Evaluation Report</title>
+<style>
+:root {
+  --fg: #1d1d1f; --fg-muted: #515154; --bg: #fafafa; --bg-card: #ffffff;
+  --bg-code: #f5f5f7; --bg-codeblock: #1d1d1f; --fg-codeblock: #d6d6d6;
+  --accent: #0066cc; --accent-soft: #e8f1fb; --border: #d2d2d7;
+  --table-header: #f5f5f7; --highlight: #fff8c5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #f5f5f7; --fg-muted: #a1a1a6; --bg: #1d1d1f; --bg-card: #2c2c2e;
+    --bg-code: #3a3a3c; --bg-codeblock: #0d0d0f; --fg-codeblock: #e8e8ea;
+    --accent: #5ac8fa; --accent-soft: #1a2733; --border: #48484a;
+    --table-header: #3a3a3c; --highlight: #6b5d1d;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  line-height: 1.7; color: var(--fg); background: var(--bg);
+  margin: 0; padding: 0;
+}
+.container { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+.crumbs { color: var(--fg-muted); font-size: 13.5px; margin-bottom: 22px; }
+.crumbs a { color: var(--accent); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+header { border-bottom: 1px solid var(--border); padding-bottom: 24px;
+         margin-bottom: 32px; }
+h1 { font-size: 2.2em; margin: 0 0 12px; letter-spacing: -0.02em; }
+h2 { font-size: 1.5em; margin: 38px 0 16px; padding-bottom: 6px;
+     border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2em; margin: 26px 0 10px; }
+blockquote { border-left: 3px solid var(--accent); margin: 16px 0;
+             padding: 4px 16px; color: var(--fg-muted);
+             background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+p, li { color: var(--fg); }
+code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em;
+       background: var(--bg-code); padding: 2px 6px; border-radius: 4px; }
+pre { background: var(--bg-codeblock); color: var(--fg-codeblock); padding: 16px 20px;
+      border-radius: 10px; overflow-x: auto; font-size: 0.88em; line-height: 1.55; }
+pre code { background: transparent; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0;
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; overflow: hidden; }
+th, td { padding: 9px 13px; text-align: left; border-bottom: 1px solid var(--border);
+         font-size: 0.95em; }
+th { background: var(--table-header); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+td:has(> strong), td strong { color: var(--accent); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+.footer { color: var(--fg-muted); font-size: 12px; text-align: center;
+          margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="crumbs"><a href="../">← Kernel Reports</a> · <a href="./">AKG-Agents v2 介绍</a> · <a href="../l1/">L1 完整评测报告</a></div>
+<h1>AKG-Agents v2 · L1 Re-Evaluation Report</h1>
+<blockquote>
+<p>把 AKG 自报的 100 题结果放到与 KernelBench / AKO4ALL / KernelAgent 同一把尺子下复测。
+Dataset: KernelBench L1 (100 题) · Hardware: RTX 5090 (sm_120, 33.7 GB) · Date: 2026-05-18</p>
+</blockquote>
+<hr />
+<h2>TL;DR</h2>
+<table>
+<thead>
+<tr>
+  <th>来源</th>
+  <th>PASS</th>
+  <th>FAIL</th>
+  <th>缺失</th>
+  <th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>AKG 内部 verifier</strong>（self-report）</td>
+  <td><strong>65</strong></td>
+  <td>33</td>
+  <td>2 (P36/P37)</td>
+  <td>容差 fp32=2% per-element + 2% population allowance</td>
+</tr>
+<tr>
+  <td><strong>Harness unified_eval</strong>（bench.py / KernelBench atol=1e-4 rtol=1e-4）</td>
+  <td><strong>16</strong></td>
+  <td>82</td>
+  <td>2 (P36/P37)</td>
+  <td>与 AKO4ALL / KernelAgent / AutoKernel 同标准</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>16 题双方都 PASS</strong>：harness PASS ⊂ AKG PASS（无 harness-only PASS）。</li>
+<li><strong>49 题 AKG-only PASS</strong>：AKG 算&quot;通过&quot;，但严格 atol/rtol=1e-4 判 FAIL。代表性案例：P98 self=4.77×、P30 self=3.46×、P94 self=3.23×、P1 matmul self=1.24×。</li>
+<li><strong>加速分布</strong>（unified_eval 下 16 个真 PASS）：<ul>
+<li>≥4×: 2 (P88=8.85, P99=4.21)</li>
+<li>1×–2×: 4 (P41=1.92, P96/P51/P5≈1.0)</li>
+<li>&lt;1×: 10（属&quot;正确但慢&quot;）</li>
+</ul>
+</li>
+<li><strong>结论</strong>：AKG 自报的 PASS 率不能与其它三框架直接对比。要进入统一榜单必须按 harness 标准复测，本报告即给出最终可比数据。</li>
+</ul>
+<hr />
+<h2>1. 为什么需要复测</h2>
+<p>AKG-Agents v2 的 verifier 来自昇腾 NPU 工具链，<strong>默认容差远宽于 KernelBench 标准</strong>。</p>
+<h3>1.1 AKG verifier 容差</h3>
+<p>源码：<code>experiments/frameworks/akg/akg_agents/python/akg_agents/op/verifier/adapters/framework/torch.py:285-394</code></p>
+<pre><code class="language-python">def get_limit(data_type):
+    if data_type == torch.float16:   return 0.004   # 0.4%
+    elif data_type == torch.bfloat16: return 0.03    # 3%
+    elif data_type == torch.int8:     return 0.01    # 1%
+    else:                             return 0.02    # fp32 默认 2%
+
+# 比较逻辑（简化）
+relative_error = torch.where(abs_ref &gt; eps, abs_diff / abs_ref, abs_diff)
+err_cnt   = (relative_error &gt; limit).sum().item()
+limit_cnt = int(finite_count * limit)        # 允许 limit 比例的元素超阈值
+if err_cnt &gt; limit_cnt:
+    raise AssertionError                     # 否则视为通过
+</code></pre>
+<p>也就是说，AKG 对 fp32 的判定是：</p>
+<ul>
+<li>每个元素允许 <strong>2% 相对误差</strong>，并且</li>
+<li>允许 <strong>2% 的元素超过该阈值</strong>。</li>
+</ul>
+<h3>1.2 Harness（bench.py / KernelBench）容差</h3>
+<pre><code class="language-python">torch.allclose(out_ref, out_test, atol=1e-4, rtol=1e-4)
+# 所有元素必须满足；任意元素超阈值即 FAIL
+</code></pre>
+<p>两者差距：在 fp32 输出量级 ~1e3 的 matmul 上，AKG 允许约 20.0 的逐元素差，harness 只允许约 0.1。<strong>~200× 差距</strong>。这就是为什么 P1 matmul（max_diff=0.75，输出量级 1024，相对 ~0.07%）AKG 判 PASS、harness 判 FAIL。</p>
+<blockquote>
+<p>这不是 bug：AKG 面向 NPU 混合精度场景设计，宽容差有助于把 fp16/bf16 加速器纳入相同框架。但<strong>比较多个 GPU 框架的&quot;正确率&quot;时必须用同把尺子。</strong></p>
+</blockquote>
+<hr />
+<h2>2. 方法</h2>
+<table>
+<thead>
+<tr>
+  <th>项</th>
+  <th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Sweep driver</td>
+  <td><code>~/akg_unified_full.sh</code>（per-kernel resumable，timeout=420s）</td>
+</tr>
+<tr>
+  <td>Evaluator</td>
+  <td><code>experiments/gpu-kernel-harness/eval/unified_eval.py</code> → <code>bench.py</code></td>
+</tr>
+<tr>
+  <td>Reference</td>
+  <td>KernelBench <code>class Model</code> PyTorch implementation（与 AKG 用同一份）</td>
+</tr>
+<tr>
+  <td>Verification</td>
+  <td><code>bench.py</code> KernelBench 模式，atol=1e-4 rtol=1e-4</td>
+</tr>
+<tr>
+  <td>Trials</td>
+  <td>5 correctness × 100 perf</td>
+</tr>
+<tr>
+  <td>GPU</td>
+  <td>RTX 5090 卡 1（<code>CUDA_VISIBLE_DEVICES=1</code>）</td>
+</tr>
+<tr>
+  <td>Env</td>
+  <td>conda <code>kernels</code>（torch 2.7 + flashinfer），<code>PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>sweep</code> 共 98/100 题（P36/P37 AKG agent loop 在 1800s timeout 内未给出 kernel，记录为 MISSING）。</p>
+<hr />
+<h2>3. 真正通过的 16 题（按 harness speedup 降序）</h2>
+<table>
+<thead>
+<tr>
+  <th>P</th>
+  <th>AKG self speedup</th>
+  <th>Harness speedup</th>
+  <th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>88</td>
+  <td>8.872×</td>
+  <td><strong>8.845×</strong></td>
+  <td>MinGPTNewGelu，AKG 最佳战绩</td>
+</tr>
+<tr>
+  <td>99</td>
+  <td>4.214×</td>
+  <td><strong>4.210×</strong></td>
+  <td>matmul + bias broadcast 类</td>
+</tr>
+<tr>
+  <td>41</td>
+  <td>1.938×</td>
+  <td><strong>1.923×</strong></td>
+  <td></td>
+</tr>
+<tr>
+  <td>96</td>
+  <td>1.000×</td>
+  <td>1.018×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>5</td>
+  <td>1.000×</td>
+  <td>1.000×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>51</td>
+  <td>0.999×</td>
+  <td>1.000×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>48</td>
+  <td>0.981×</td>
+  <td>0.979×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>12</td>
+  <td>0.940×</td>
+  <td>0.910×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>0.800×</td>
+  <td>0.797×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>42</td>
+  <td>0.381×</td>
+  <td>0.398×</td>
+  <td>&lt; 1×，AKG 找到正确但慢的 kernel</td>
+</tr>
+<tr>
+  <td>47</td>
+  <td>0.274×</td>
+  <td>0.274×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>53</td>
+  <td>0.274×</td>
+  <td>0.274×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>75</td>
+  <td>0.249×</td>
+  <td>0.249×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>49</td>
+  <td>0.207×</td>
+  <td>0.205×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>52</td>
+  <td>0.206×</td>
+  <td>0.205×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>43</td>
+  <td>0.013×</td>
+  <td>0.013×</td>
+  <td>极慢</td>
+</tr>
+</tbody>
+</table>
+<p><strong>结论</strong>：</p>
+<ul>
+<li>真正&quot;有加速且正确&quot;（speedup ≥ 1×）的只有 <strong>5 题</strong>（P88, P99, P41, P96, P51）。</li>
+<li>真正&quot;显著加速&quot;（speedup ≥ 2×）的只有 <strong>3 题</strong>（P88, P99, P41）。</li>
+</ul>
+<hr />
+<h2>4. 假阳性 TOP-20：AKG self-PASS 但 harness FAIL</h2>
+<p>按 AKG 自报 speedup 排序。这些 kernel 通过了 AKG 的宽容差，但在 atol=1e-4 下不达标。</p>
+<table>
+<thead>
+<tr>
+  <th>P</th>
+  <th>AKG self speedup</th>
+  <th>Kernel 类别（KernelBench 名）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>98</td>
+  <td>4.774×</td>
+  <td>matmul 类</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td>3.457×</td>
+  <td>Softsign（OOM 也可能触发，但首因是数值不一致）</td>
+</tr>
+<tr>
+  <td>94</td>
+  <td>3.231×</td>
+  <td>norm/reduction 类</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td>2.455×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>2.414×</td>
+  <td>matmul triplet</td>
+</tr>
+<tr>
+  <td>92</td>
+  <td>2.398×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>83</td>
+  <td>2.113×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>93</td>
+  <td>2.111×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>95</td>
+  <td>2.069×</td>
+  <td>CrossEntropy（同时 KernelBench ref 在 5090 上不兼容）</td>
+</tr>
+<tr>
+  <td>82</td>
+  <td>1.367×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>13</td>
+  <td>1.242×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>1</td>
+  <td>1.242×</td>
+  <td>matmul，max_diff=0.75 on outputs ~1024（0.07% rel）</td>
+</tr>
+<tr>
+  <td>90</td>
+  <td>1.235×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>10</td>
+  <td>1.211×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>15</td>
+  <td>1.195×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>7</td>
+  <td>1.193×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>14</td>
+  <td>1.114×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>1.076×</td>
+  <td>matmul</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td>1.031×</td>
+  <td></td>
+</tr>
+<tr>
+  <td>29</td>
+  <td>1.002×</td>
+  <td></td>
+</tr>
+</tbody>
+</table>
+<p>完整 49 题清单见 <code>verify_all_l1.json</code> 派生表（待 collect_results.py 集成后并入 <code>all_results_v3.json</code>）。</p>
+<hr />
+<h2>5. 失败模式拆解（手工抽样）</h2>
+<table>
+<thead>
+<tr>
+  <th>模式</th>
+  <th>典型 P</th>
+  <th>现象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>数值精度不达 atol=1e-4</td>
+  <td>P1, P98, P3</td>
+  <td>bench.py 报 max_diff 超阈，AKG 自身宽容差判 PASS</td>
+</tr>
+<tr>
+  <td>KernelBench ref 在 5090 不可用</td>
+  <td>P95</td>
+  <td><code>nll_loss_forward_reduce_cuda_kernel_2d_index not implemented for Float</code> — 算 N/A 而非 AKG 锅</td>
+</tr>
+<tr>
+  <td>双 32 GiB allclose OOM</td>
+  <td>P30 (Softsign 4096×393216 fp32)</td>
+  <td>物理显存上限，需 chunked allclose 才能复测</td>
+</tr>
+<tr>
+  <td>illegal memory access</td>
+  <td>P17, P71, P78, P100</td>
+  <td>kernel 越界，FAIL 正确</td>
+</tr>
+<tr>
+  <td>AKG agent loop timeout</td>
+  <td>P36 (RMSNorm), P37</td>
+  <td>sweep 1800s 内未交付 kernel</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>6. 影响：跨框架对比的正确做法</h2>
+<p>之前的对比表（<code>reports/l1/</code>）中 AKO4ALL=77% / AutoKernel=42% / KernelAgent ≈ 60% 都是 harness 同标准下的 PASS 率。要把 AKG 放到同一张表，<strong>只能用本报告的 16/100 = 16%</strong>，而不是 AKG self-report 的 65%。</p>
+<blockquote>
+<p>⚠️ 任何在 paper / 内部分享中引用 &quot;AKG-Agents 通过 65 题&quot; 的数字，都必须明确标注为 <em>AKG-internal verifier</em>（fp32 2% relative + 2% population），并附本报告作为 cross-framework 对照点。</p>
+</blockquote>
+<hr />
+<h2>7. 下一步</h2>
+<ol>
+<li><strong>collect_results.py 集成</strong> — 在 <code>experiments/gpu-kernel-harness/eval/collect_results.py</code> 的 <code>collect_akg()</code> 中追加从 <code>~/akg_unified_full/per_kernel/*/unified_eval_results.json</code> 读取 harness PASS 字段，与 AKG self-report 并列存入 <code>all_results_v3.json</code>。</li>
+<li><strong>plots 重生成</strong> — <code>generate_plots.py</code> 加 AKG 柱状图，展示 self vs harness 的双数字。</li>
+<li><strong>OOM 题降精度</strong> — 对 P30 类需 fp16 / chunked allclose 才能复测的题目，在 <code>eval_config.yaml</code> 加 per-problem 覆盖。</li>
+</ol>
+<hr />
+<h2>相关文档</h2>
+<ul>
+<li>📘 <a href="../akg/">AKG-Agents v2 深度介绍</a> — 14 天逆向 + 架构图 + LangGraph 工作流</li>
+<li>📊 <a href="../l1/">L1 完整评测报告</a> — AKO4ALL / AutoKernel / KernelAgent 100 题对比</li>
+<li>🏠 <a href="../">Kernel Reports 首页</a></li>
+</ul>
+<p>数据原始位置：</p>
+<ul>
+<li>Sweep 日志：<code>gpu-server:~/akg_unified_full/run.log</code></li>
+<li>汇总 TSV：<code>gpu-server:~/akg_unified_full/summary.tsv</code></li>
+<li>AKG self-report JSON：<code>gpu-server:~/benchmark_runs_v3/results/akg_coder_L1_P*_akg_result.json</code></li>
+<li>每题详情：<code>gpu-server:~/akg_unified_full/per_kernel/P*/unified_eval_results.json</code></li>
+</ul>
+
+<div class="footer">
+Generated from <code>AKG_L1_REEVAL.md</code> · better_kernels project
+</div>
+</div>
+</body>
+</html>
