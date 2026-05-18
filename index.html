@@ -104,6 +104,18 @@ footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 5
       </div>
       <a class="open" href="akg/">查看研究 →</a>
     </div>
+
+    <div class="report">
+      <h2>AKG-Agents v2 · L1 复测</h2>
+      <div class="tag">100 题 · RTX 5090 · harness 统一标准</div>
+      <p>用 KernelBench atol=1e-4 严判 AKG-Agents v2 生成的 98 个 L1 kernel。
+        揭示 AKG 内部 verifier 容差（fp32 2%/2% population）与 harness 相差
+        ~200×，自报 PASS 与真 PASS 的 gap，以及 P88=8.85× 等真加速明星。</p>
+      <div class="stat">
+        AKG self <b>65%</b> · harness strict <b>16%</b> · gap 49 题
+      </div>
+      <a class="open" href="akg/l1_reeval.html">查看复测 →</a>
+    </div>
   </div>
 
   <footer>
