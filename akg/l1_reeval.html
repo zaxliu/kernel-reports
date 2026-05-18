@@ -98,16 +98,44 @@ Dataset: KernelBench L1 (100 题) · Hardware: RTX 5090 (sm_120, 33.7 GB) · Dat
 </tr>
 </tbody>
 </table>
+<p>横向对照（同把 harness 尺子）：</p>
+<table>
+<thead>
+<tr>
+  <th>框架</th>
+  <th>Harness PASS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>AKO4ALL</td>
+  <td><strong>70 / 100</strong></td>
+</tr>
+<tr>
+  <td>AKG-Agents v2</td>
+  <td><strong>16 / 100</strong></td>
+</tr>
+<tr>
+  <td>AutoKernel program_md</td>
+  <td>11 / 100</td>
+</tr>
+<tr>
+  <td>AutoKernel program_kb</td>
+  <td>8 / 100</td>
+</tr>
+</tbody>
+</table>
 <ul>
 <li><strong>16 题双方都 PASS</strong>：harness PASS ⊂ AKG PASS（无 harness-only PASS）。</li>
 <li><strong>49 题 AKG-only PASS</strong>：AKG 算&quot;通过&quot;，但严格 atol/rtol=1e-4 判 FAIL。代表性案例：P98 self=4.77×、P30 self=3.46×、P94 self=3.23×、P1 matmul self=1.24×。</li>
+<li><strong>AKG vs AKO4ALL 头对头</strong>：在 AKG 的 16 题里，AKO4ALL 通过 14 题且<strong>全部不慢于 AKG</strong>（0 胜 14 负 2 独家）。AKG 独家的 P5、P42 也无实加速（≤1×）。</li>
 <li><strong>加速分布</strong>（unified_eval 下 16 个真 PASS）：<ul>
 <li>≥4×: 2 (P88=8.85, P99=4.21)</li>
 <li>1×–2×: 4 (P41=1.92, P96/P51/P5≈1.0)</li>
 <li>&lt;1×: 10（属&quot;正确但慢&quot;）</li>
 </ul>
 </li>
-<li><strong>结论</strong>：AKG 自报的 PASS 率不能与其它三框架直接对比。要进入统一榜单必须按 harness 标准复测，本报告即给出最终可比数据。</li>
+<li><strong>结论</strong>：AKG 自报的 PASS 率不能与其它三框架直接对比。在同一把尺子下，AKG 的&quot;agent-loop + LLM 生成&quot;路线目前落后于 AKO4ALL 的检索+模板路线。</li>
 </ul>
 <hr />
 <h2>1. 为什么需要复测</h2>
@@ -297,7 +325,306 @@ if err_cnt &gt; limit_cnt:
 <li>真正&quot;显著加速&quot;（speedup ≥ 2×）的只有 <strong>3 题</strong>（P88, P99, P41）。</li>
 </ul>
 <hr />
-<h2>4. 假阳性 TOP-20：AKG self-PASS 但 harness FAIL</h2>
+<h2>4. 横向对比：与 AKO4ALL / AutoKernel 同尺子下</h2>
+<blockquote>
+<p>数据源：<code>experiments/L1_full_report/verify_all_l1.json</code>（已是 atol=1e-4 fp32 strict 复测后的结果，与 AKG 复测同标准）。</p>
+</blockquote>
+<h3>4.1 总览</h3>
+<table>
+<thead>
+<tr>
+  <th>框架</th>
+  <th>Harness PASS (real_fp32 + real_fp16_oom)</th>
+  <th>Top speedup</th>
+  <th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>AKO4ALL</strong></td>
+  <td><strong>70 / 100</strong></td>
+  <td>P88=8.96× / P100=7.56× / P40=6.98×</td>
+  <td>当前 L1 上限</td>
+</tr>
+<tr>
+  <td>AutoKernel program_md</td>
+  <td>11 / 100</td>
+  <td>P32=3458× (疑似 dead-code) / P94=3.22×</td>
+  <td>编译器路线，覆盖窄但偶有大优化</td>
+</tr>
+<tr>
+  <td>AutoKernel program_kb</td>
+  <td>8 / 100</td>
+  <td>P8=2.40× / P59=2.11×</td>
+  <td>KernelBench-only 模式，覆盖最窄</td>
+</tr>
+<tr>
+  <td><strong>AKG-Agents v2</strong></td>
+  <td><strong>16 / 100</strong></td>
+  <td>P88=8.85× / P99=4.21× / P41=1.92×</td>
+  <td>LLM agent loop，本报告主角</td>
+</tr>
+</tbody>
+</table>
+<h3>4.2 AKG 的 16 题逐题对比</h3>
+<table>
+<thead>
+<tr>
+  <th>P</th>
+  <th>AKG</th>
+  <th>AKO4ALL</th>
+  <th>AutoK_MD</th>
+  <th>AutoK_KB</th>
+  <th>胜出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>88</td>
+  <td><strong>8.845×</strong></td>
+  <td>8.958×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO 略快</td>
+</tr>
+<tr>
+  <td>99</td>
+  <td><strong>4.210×</strong></td>
+  <td>4.210×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>并列</td>
+</tr>
+<tr>
+  <td>41</td>
+  <td><strong>1.923×</strong></td>
+  <td>1.955×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO 略快</td>
+</tr>
+<tr>
+  <td>96</td>
+  <td><strong>1.018×</strong></td>
+  <td>2.471×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO 快 2.4×</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><strong>1.000×</strong></td>
+  <td>—</td>
+  <td>—</td>
+  <td>—</td>
+  <td><strong>AKG 独家</strong></td>
+</tr>
+<tr>
+  <td>51</td>
+  <td><strong>1.000×</strong></td>
+  <td>1.000×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>并列</td>
+</tr>
+<tr>
+  <td>48</td>
+  <td><strong>0.979×</strong></td>
+  <td>1.016×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><strong>0.910×</strong></td>
+  <td>1.004×</td>
+  <td>1.002×</td>
+  <td>—</td>
+  <td>其它略胜</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><strong>0.797×</strong></td>
+  <td>0.968×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO</td>
+</tr>
+<tr>
+  <td>42</td>
+  <td><strong>0.398×</strong></td>
+  <td>—</td>
+  <td>—</td>
+  <td>—</td>
+  <td><strong>AKG 独家</strong>（且 &lt;1×）</td>
+</tr>
+<tr>
+  <td>47</td>
+  <td><strong>0.274×</strong></td>
+  <td>1.020×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO</td>
+</tr>
+<tr>
+  <td>53</td>
+  <td><strong>0.274×</strong></td>
+  <td>1.000×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO</td>
+</tr>
+<tr>
+  <td>75</td>
+  <td><strong>0.249×</strong></td>
+  <td>0.998×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO</td>
+</tr>
+<tr>
+  <td>49</td>
+  <td><strong>0.205×</strong></td>
+  <td>1.000×</td>
+  <td>—</td>
+  <td>—</td>
+  <td>AKO</td>
+</tr>
+<tr>
+  <td>52</td>
+  <td><strong>0.205×</strong></td>
+  <td>1.000×</td>
+  <td>—</td>
+  <td><strong>1.000×</strong></td>
+  <td>其它</td>
+</tr>
+<tr>
+  <td>43</td>
+  <td><strong>0.013×</strong></td>
+  <td>1.262×</td>
+  <td>1.256×</td>
+  <td>—</td>
+  <td>其它</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AKG 在 16 题里 vs AKO4ALL 全败（0 胜 14 负 2 独家）</strong>。两题&quot;独家&quot;P5、P42 实际上也只是 1.00× 和 0.40×，没有真加速。</p>
+<h3>4.3 AKG 错过的&quot;低垂果实&quot;</h3>
+<p>AKO4ALL 拿到加速、但 AKG 没通过 harness 的题（按 AKO 加速排序，前 15）：</p>
+<table>
+<thead>
+<tr>
+  <th>P</th>
+  <th>AKO4ALL</th>
+  <th>AKG self speedup</th>
+  <th>AKG 状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>100</td>
+  <td>7.56×</td>
+  <td>0.97×</td>
+  <td>self FAIL（kernel illegal mem）</td>
+</tr>
+<tr>
+  <td>40</td>
+  <td>6.98×</td>
+  <td>1.00×</td>
+  <td>self PASS 但 harness FAIL</td>
+</tr>
+<tr>
+  <td>98</td>
+  <td>5.70×</td>
+  <td>4.77×</td>
+  <td>self PASS 但 harness FAIL（精度）</td>
+</tr>
+<tr>
+  <td>84</td>
+  <td>4.92×</td>
+  <td>1.10×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>35</td>
+  <td>3.46×</td>
+  <td>1.00×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>89</td>
+  <td>2.84×</td>
+  <td>1.13×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>65</td>
+  <td>2.81×</td>
+  <td>1.00×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>91</td>
+  <td>2.59×</td>
+  <td>1.05×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>56</td>
+  <td>2.46×</td>
+  <td>1.00×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>96</td>
+  <td>2.47×</td>
+  <td>1.02×</td>
+  <td><strong>AKG 也过，但只 1.02×（AKO 拿到 2.4×）</strong></td>
+</tr>
+<tr>
+  <td>76</td>
+  <td>2.34×</td>
+  <td>1.16×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>33</td>
+  <td>2.20×</td>
+  <td>1.06×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>68</td>
+  <td>2.04×</td>
+  <td>1.00×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>69</td>
+  <td>2.04×</td>
+  <td>1.00×</td>
+  <td>self FAIL</td>
+</tr>
+<tr>
+  <td>81</td>
+  <td>1.96×</td>
+  <td>1.00×</td>
+  <td>self FAIL</td>
+</tr>
+</tbody>
+</table>
+<p>P40 / P98 / P35 等关键加速点 AKG 内部判 PASS（说明 LLM 生成了 kernel），但精度过不了 harness 严判。</p>
+<h3>4.4 统一榜单视角</h3>
+<p>去重后 4 框架至少有 1 个通过的题：<strong>77 / 98</strong>（excl. P36/P37）。其中：</p>
+<ul>
+<li>AKO4ALL 70 题贡献了绝对主力</li>
+<li>AKG 在 14 题与 AKO 重叠，2 题独家（无实加速）</li>
+<li>AutoKernel 两个变体共 19 题，多数与 AKO 重叠</li>
+</ul>
+<p><strong>剩 21 题任何框架都没通过</strong>：P9, P15, P19-22, P25-29, P30 (OOM), P31, P38, P50, P63, P64, P67, P80, P87, P93, P95。这些是真正的 L1 困难集。</p>
+<hr />
+<h2>5. 假阳性 TOP-20：AKG self-PASS 但 harness FAIL</h2>
 <p>按 AKG 自报 speedup 排序。这些 kernel 通过了 AKG 的宽容差，但在 atol=1e-4 下不达标。</p>
 <table>
 <thead>
@@ -412,7 +739,7 @@ if err_cnt &gt; limit_cnt:
 </table>
 <p>完整 49 题清单见 <code>verify_all_l1.json</code> 派生表（待 collect_results.py 集成后并入 <code>all_results_v3.json</code>）。</p>
 <hr />
-<h2>5. 失败模式拆解（手工抽样）</h2>
+<h2>6. 失败模式拆解（手工抽样）</h2>
 <table>
 <thead>
 <tr>
@@ -450,13 +777,13 @@ if err_cnt &gt; limit_cnt:
 </tbody>
 </table>
 <hr />
-<h2>6. 影响：跨框架对比的正确做法</h2>
+<h2>7. 影响：跨框架对比的正确做法</h2>
 <p>之前的对比表（<code>reports/l1/</code>）中 AKO4ALL=77% / AutoKernel=42% / KernelAgent ≈ 60% 都是 harness 同标准下的 PASS 率。要把 AKG 放到同一张表，<strong>只能用本报告的 16/100 = 16%</strong>，而不是 AKG self-report 的 65%。</p>
 <blockquote>
 <p>⚠️ 任何在 paper / 内部分享中引用 &quot;AKG-Agents 通过 65 题&quot; 的数字，都必须明确标注为 <em>AKG-internal verifier</em>（fp32 2% relative + 2% population），并附本报告作为 cross-framework 对照点。</p>
 </blockquote>
 <hr />
-<h2>7. 下一步</h2>
+<h2>8. 下一步</h2>
 <ol>
 <li><strong>collect_results.py 集成</strong> — 在 <code>experiments/gpu-kernel-harness/eval/collect_results.py</code> 的 <code>collect_akg()</code> 中追加从 <code>~/akg_unified_full/per_kernel/*/unified_eval_results.json</code> 读取 harness PASS 字段，与 AKG self-report 并列存入 <code>all_results_v3.json</code>。</li>
 <li><strong>plots 重生成</strong> — <code>generate_plots.py</code> 加 AKG 柱状图，展示 self vs harness 的双数字。</li>
