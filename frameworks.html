@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>框架原理与对比 — Kernel Reports</title>
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff; --border: #e2e5ea;
+  --text: #1a1d23; --dim: #4b5263; --muted: #8b92a0; --accent: #2563eb;
+  --green: #059669; --indigo: #4f46e5; --amber: #d97706;
+  --orange: #ea580c; --red: #dc2626; --rose: #e11d48;
+  --table-header: #f1f3f6;
+  --green-bg: #ecfdf5; --indigo-bg: #eef2ff; --amber-bg: #fffbeb; --red-bg: #fef2f2;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --code-bg: #f4f5f7; --code-text: #1e293b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+    "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 15px; line-height: 1.6; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; background: var(--code-bg); color: var(--code-text);
+  padding: 2px 6px; border-radius: 4px; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 16px 20px;
+  border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5;
+  margin: 12px 0; }
+pre code { background: none; padding: 0; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+/* ── Hero ── */
+.hero {
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fefce8 100%);
+  padding: 48px 0 36px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+.hero .sub { color: var(--dim); font-size: 15px; max-width: 640px; line-height: 1.5; }
+
+/* ── Breadcrumb ── */
+.breadcrumb { padding: 14px 0; font-size: 13px; color: var(--muted);
+  border-bottom: 1px solid var(--border); }
+.breadcrumb a { font-weight: 500; }
+
+/* ── Section ── */
+section { padding: 36px 0 0; }
+section h2 { font-size: 22px; font-weight: 700; margin-bottom: 16px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+section h3 { font-size: 17px; font-weight: 600; margin: 24px 0 10px; color: var(--text); }
+
+/* ── Info cards ── */
+.info-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 20px 24px; margin: 16px 0; }
+.info-card .title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+.info-card p, .info-card li { color: var(--dim); font-size: 14px; line-height: 1.6; }
+.info-card ul { padding-left: 18px; margin: 8px 0 0; }
+
+/* ── Tabs ── */
+.fw-tabs { margin: 20px 0; }
+.tab-bar { display: flex; gap: 0; border-bottom: 2px solid var(--border); }
+.tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+  border: none; background: none; color: var(--muted); position: relative;
+  transition: color 0.15s; }
+.tab-btn:hover { color: var(--dim); }
+.tab-btn.active { color: var(--accent); }
+.tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+  height: 2px; background: var(--accent); }
+.tab-panel { display: none; padding: 24px 0; }
+.tab-panel.active { display: block; }
+
+/* ── Workflow steps ── */
+.workflow { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
+.wf-step { background: var(--indigo-bg); color: var(--indigo); font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px; }
+.wf-step.green { background: var(--green-bg); color: var(--green); }
+.wf-step.amber { background: var(--amber-bg); color: var(--amber); }
+
+/* ── Key points ── */
+.key-point { display: flex; gap: 12px; margin: 10px 0; }
+.key-point .icon { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.key-point .body { font-size: 14px; color: var(--dim); line-height: 1.55; }
+.key-point .body b { color: var(--text); }
+
+/* ── Comparison table ── */
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 16px 0; }
+.cmp-table th { background: var(--table-header); font-weight: 600; text-align: left;
+  padding: 10px 14px; border-bottom: 2px solid var(--border); font-size: 13px; }
+.cmp-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.cmp-table tr:last-child td { border-bottom: none; }
+.cmp-table .g { color: var(--green); font-weight: 600; }
+.cmp-table .r { color: var(--red); font-weight: 600; }
+.cmp-table .dim { color: var(--muted); }
+
+/* ── Mechanism cards ── */
+.mech-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 16px 0; }
+.mech-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.mech-card .num { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.mech-card .label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.mech-card p { font-size: 13px; color: var(--dim); line-height: 1.5; }
+
+/* ── Glossary ── */
+.glossary { width: 100%; border-collapse: collapse; font-size: 14px; margin: 16px 0; }
+.glossary th { background: var(--table-header); font-weight: 600; text-align: left;
+  padding: 10px 14px; border-bottom: 2px solid var(--border); }
+.glossary td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.glossary td:first-child { font-weight: 600; white-space: nowrap; width: 180px; }
+.glossary tr:last-child td { border-bottom: none; }
+
+/* ── Verdict table ── */
+.verdict-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 16px 0; }
+.verdict-tbl th { background: var(--table-header); font-weight: 600; text-align: left;
+  padding: 10px 14px; border-bottom: 2px solid var(--border); }
+.verdict-tbl td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.verdict-tbl code { font-size: 12px; }
+
+/* ── Bottom nav ── */
+.bottom-nav { display: flex; justify-content: space-between; align-items: center;
+  padding: 32px 0 48px; margin-top: 24px; border-top: 1px solid var(--border); }
+.bottom-nav a { font-weight: 500; font-size: 14px; }
+
+/* ── Footer ── */
+footer { color: var(--muted); font-size: 12px; text-align: center;
+  padding: 24px 0 32px; border-top: 1px solid var(--border); }
+
+/* ── Highlight box ── */
+.highlight-box { background: var(--indigo-bg); border-left: 3px solid var(--indigo);
+  padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0;
+  font-size: 14px; color: var(--dim); line-height: 1.55; }
+.highlight-box b { color: var(--text); }
+.highlight-box.green { background: var(--green-bg); border-color: var(--green); }
+.highlight-box.amber { background: var(--amber-bg); border-color: var(--amber); }
+.highlight-box.red { background: var(--red-bg); border-color: var(--red); }
+
+/* ── Tier list ── */
+.tier-list { margin: 12px 0; }
+.tier-item { display: flex; gap: 12px; align-items: baseline; margin: 6px 0;
+  font-size: 14px; color: var(--dim); }
+.tier-badge { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 8px;
+  border-radius: 4px; background: var(--indigo-bg); color: var(--indigo); text-align: center;
+  min-width: 48px; }
+
+@media (max-width: 720px) {
+  .mech-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 24px; }
+  .tab-btn { padding: 8px 14px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <div class="container">
+    <a href="index.html">&larr; 首页</a> &middot; 框架原理与对比
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <h1>三个 Agent 框架如何自动优化 GPU Kernel</h1>
+    <div class="sub">
+      从 Karpathy 的 autoresearch 到 KernelBench 实战 —— 评测集介绍、假阳性方法学、三框架设计与对比
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- §0  KernelBench -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section id="kernelbench">
+  <h2>§0 &nbsp; 什么是 KernelBench</h2>
+
+  <div class="info-card">
+    <div class="title">评测集简介</div>
+    <p>
+      <a href="https://scalingintelligence.stanford.edu/blogs/kernelbench/" target="_blank">KernelBench</a>
+      是斯坦福发布的 GPU 算子优化评测集。每题给出一段 PyTorch <code>Model</code>（参考实现）和一段
+      <code>ModelNew</code>（待优化），要求生成更快且<b>数值正确</b>的 CUDA/Triton kernel。
+    </p>
+    <ul>
+      <li><b>L1</b> — 100 题单算子（matmul、softmax、LayerNorm、conv 等）</li>
+      <li><b>L2</b> — 100 题算子融合（3–6 op 链，如 conv+BN+ReLU）</li>
+      <li><b>L3</b> — 模型级（MLP、Transformer block 等完整模块）</li>
+      <li><b>L4</b> — HuggingFace 模型（端到端推理/训练）</li>
+    </ul>
+  </div>
+
+  <h3>验收标准</h3>
+  <p>
+    KernelBench 默认使用宽松容差 <code>atol=1e-2, rtol=1e-2</code>，原本是为容忍 fp16 tensor core 舍入而设。
+    但这也导致"答案不太对但够近"的 kernel 通过验收 —— 即<b>假阳性</b>问题。
+    本评测用 <b>fp32 strict (<code>atol=1e-4</code>)</b> 三层复测逐题验真伪。
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- §1  autoresearch -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section id="autoresearch">
+  <h2>§1 &nbsp; autoresearch 范式</h2>
+
+  <div class="info-card">
+    <div class="title">
+      <a href="https://github.com/karpathy/autoresearch" target="_blank">Karpathy autoresearch</a> 核心理念
+    </div>
+    <p>一个 GPU、一个文件、一个指标。</p>
+    <ul>
+      <li>写一份 <code>program.md</code>，告诉 LLM "你在做什么、怎么迭代、怎么判好坏"</li>
+      <li>循环: <b>改代码 → 跑 5 分钟 → 指标变好则保留 / 变差则回退 → 重复</b></li>
+      <li>无需人工干预，一夜可跑 100+ 次迭代</li>
+    </ul>
+  </div>
+
+  <h3>如何迁移到 kernel 优化</h3>
+  <p>
+    autoresearch 的"一个文件"对应 <code>kernel.py</code>，"一个指标"对应 <b>speedup</b>（加速比）。
+    三个框架都继承了这个核心循环，差异在于：<b>profile 策略</b>（是否强制 <code>ncu</code>）、
+    <b>反作弊约束</b>（是否限制 dtype cheat / reward hacking）、<b>迭代留痕</b>（是否强制记录假说和结果）。
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- §2  三框架 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section id="frameworks">
+  <h2>§2 &nbsp; 三框架详解</h2>
+
+  <div class="fw-tabs">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="ako4all">ako4all</button>
+      <button class="tab-btn" data-tab="program_md">AutoKernel / program_md</button>
+      <button class="tab-btn" data-tab="program_kb">AutoKernel / program_kb</button>
+    </div>
+
+    <!-- ── ako4all ── -->
+    <div class="tab-panel active" id="tab-ako4all">
+      <h3>AKO4ALL — Agentic Kernel Optimization for All</h3>
+      <p style="color:var(--dim); font-size:14px; margin-bottom:12px;">
+        来源: Tongming LAIC
+        (<a href="https://tongminglaic.github.io/AKO" target="_blank">项目页</a>)。
+        外层 coding agent（默认 Claude Code）= 研究员；框架本身完全文件驱动，
+        把"什么算一次迭代、必须留什么痕迹、什么是 reward hacking"全部写进
+        <code>TASK.md</code> / <code>HINTS.md</code>，靠 LLM 读 prompt 自律。
+      </p>
+
+      <h3>工作流（5 阶段）</h3>
+      <div class="workflow">
+        <span class="wf-step">① Setup</span>
+        <span class="wf-step">② Profile (ncu)</span>
+        <span class="wf-step green">③ Iterate</span>
+        <span class="wf-step amber">④ Adapt</span>
+        <span class="wf-step">⑤ Finalize</span>
+      </div>
+      <ul style="font-size:14px; color:var(--dim); padding-left:18px; margin-bottom:16px;">
+        <li><b>Setup</b> — 读 <code>input/</code>、<code>context/</code>、<code>bench/</code>、<code>HINTS.md</code>；创建 <code>opt/&lt;kernel-name&gt;</code> 分支</li>
+        <li><b>Profile</b> — 强制 <code>ncu</code> 对 baseline profile 一次（<b>不可跳过</b>）</li>
+        <li><b>Iterate</b> — 每次 <code>edit kernel.py → bash bench.sh iter-N → 写 ITERATIONS.md → git commit</code> 四步原子；无论成功/失败都记一个 iter</li>
+        <li><b>Adapt</b> — 命中 <code>HINTS.md</code> 中的 stall rule（连续 N 次无改进）才允许换方向</li>
+        <li><b>Finalize</b> — final commit + 在 <code>ITERATIONS.md</code> 写 summary</li>
+      </ul>
+
+      <h3>关键设计</h3>
+      <div class="key-point">
+        <div class="icon" style="background:var(--green-bg); color:var(--green);">🛡</div>
+        <div class="body"><b>反 reward hacking</b> — <code>TASK.md</code> 36 行把目标定义写在第二段:
+          <i>"Your goal is genuine latency reduction — not maximizing the reported speedup ratio."</i>
+          并列出 4 类禁止技巧: CUDA stream injection / thread-process injection / monkey-patch timing / 任何 reward hacking。
+          <b>这是与其他框架的核心差异。</b></div>
+      </div>
+      <div class="key-point">
+        <div class="icon" style="background:var(--indigo-bg); color:var(--indigo);">📊</div>
+        <div class="body"><b>强制 ncu profile</b> — 不是建议而是约束。让 LLM 看到真实瓶颈（memory-bound / compute-bound），
+          而非盲目尝试 dtype cast。</div>
+      </div>
+      <div class="key-point">
+        <div class="icon" style="background:var(--amber-bg); color:var(--amber);">📓</div>
+        <div class="body"><b>ITERATIONS.md 留痕</b> — 每次迭代强制写: Hypothesis → Result → Decision。
+          连续 3 iter 无改进触发 stall rule → 重新 ncu + 回读历史 + 换方向。
+          这是 ako4all 能从 fp16 失败回退到 TF32 / 切换策略的核心机制。</div>
+      </div>
+      <div class="key-point">
+        <div class="icon" style="background:var(--bg2); color:var(--muted);">🔍</div>
+        <div class="body"><b>WebSearch 可用但未触发</b> — prompt 两处鼓励调用 WebSearch；但 L1 全部 100 题的
+          <code>ITERATIONS.md</code> 全文 grep 0 命中。L1 都是教科书级算子，LLM 权重已涵盖。</div>
+      </div>
+
+      <div class="highlight-box green">
+        <b>L1 真实率 77%</b> · <b>L2 真实率 83%</b> · fp32 strict 复测
+      </div>
+    </div>
+
+    <!-- ── program_md ── -->
+    <div class="tab-panel" id="tab-program_md">
+      <h3>AutoKernel / program_md — model-level autoresearch</h3>
+      <p style="color:var(--dim); font-size:14px; margin-bottom:12px;">
+        来源: RightNow-AI 的
+        <a href="https://github.com/RightNow-AI/autokernel" target="_blank">AutoKernel</a>，
+        灵感来自 Karpathy autoresearch。
+        设计为给一个完整 PyTorch model，自动 profile → extract → optimize → integrate。
+        <code>program.md</code> 长达 909 行，三阶段 A/B/C。
+      </p>
+
+      <h3>工作流（三阶段 · KB 单题下被砍为仅 Phase B）</h3>
+      <div class="workflow">
+        <span class="wf-step" style="opacity:0.4">Phase A: 分析 (砍)</span>
+        <span class="wf-step green">Phase B: 优化循环</span>
+        <span class="wf-step" style="opacity:0.4">Phase C: 集成 (砍)</span>
+      </div>
+      <p style="font-size:14px; color:var(--dim); margin-bottom:16px;">
+        单 KernelBench 题没有 model-level 概念 —— <code>run_autokernel.sh</code> 把 <code>program.md</code>
+        拼到 CLAUDE.md 后追加 "只看 <code>kernel.py</code>，做 hypothesis → edit → bench → keep/revert"。
+        Phase A/C 全跳过，Phase B 缩成单 kernel loop。
+      </p>
+
+      <h3>6-Tier Optimization Playbook</h3>
+      <div class="tier-list">
+        <div class="tier-item"><span class="tier-badge">Tier 1</span> Block Size Tuning — BLOCK_M/N/K 扫 16–256，预期 10–50%</div>
+        <div class="tier-item"><span class="tier-badge">Tier 2</span> Memory — coalescing、prefetch、L2 swizzle、bank conflict，预期 10–30%</div>
+        <div class="tier-item"><span class="tier-badge">Tier 3</span> Compute — TF32、mixed precision、epilogue fusion，预期 5–15%</div>
+        <div class="tier-item"><span class="tier-badge">Tier 4</span> Advanced — Split-K、persistent kernels、autotune、warp specialization，预期 5–20%</div>
+        <div class="tier-item"><span class="tier-badge" style="background:var(--amber-bg); color:var(--amber);">Tier 5</span> Architecture — H100/A100/L40S 各有标签，<b>RTX 5090 段缺失</b></div>
+        <div class="tier-item"><span class="tier-badge">Tier 6</span> Kernel tricks — matmul swizzle、softmax online、LayerNorm Welford</div>
+      </div>
+
+      <h3>dtype 策略隐患</h3>
+      <div class="highlight-box amber">
+        Tier 3 写 <i>"Use <code>tl.dot(a, b, allow_tf32=True)</code> … Keep accumulators in fp32"</i> — 理论正确。
+        但 LLM 实际常写出 <code>tl.dot(a.to(bf16), b.to(bf16), acc)</code>，操作数降精度而 accumulator 在 fp32，
+        正是假阳性 §0.3 第 1 类 truncation 的来源。
+      </div>
+
+      <div class="highlight-box">
+        <b>L1 真实率 42%</b> · fp32 strict 复测
+      </div>
+    </div>
+
+    <!-- ── program_kb ── -->
+    <div class="tab-panel" id="tab-program_kb">
+      <h3>AutoKernel / program_kb — KernelBench-native 变体</h3>
+      <p style="color:var(--dim); font-size:14px; margin-bottom:12px;">
+        同 AutoKernel 仓库的 <code>kernelbench/</code> 子模块。
+        prompt 入口 <code>program_kb.md</code> 仅 388 行（比 <code>program.md</code> 短一半多），
+        完全跳过 Phase A/C，直接面向 KB 的 <code>(Model, ModelNew)</code> 对做优化循环。
+      </p>
+
+      <h3>工作流（8 段 · 更激进）</h3>
+      <div class="workflow">
+        <span class="wf-step">Setup</span>
+        <span class="wf-step green">Optimization Loop</span>
+        <span class="wf-step">Playbook by Level</span>
+        <span class="wf-step">CUDA Tips</span>
+        <span class="wf-step amber">Anti-Patterns</span>
+        <span class="wf-step">Decision</span>
+        <span class="wf-step">Scoring</span>
+      </div>
+
+      <h3>激进 dtype 策略</h3>
+      <p style="font-size:14px; color:var(--dim); margin-bottom:12px;">
+        对 matmul 直接写 <i>"Use wmma tensor cores"</i> 并指向 <code>kernels/cuda/matmul.py</code> 参考实现 ——
+        这是 program_kb 在 matmul 类问题上压倒性走 fp16/bf16 路径的根因。
+        又因为 KB 默认 <code>atol=1e-2</code>，这些 cheat 都能通过框架自己的验收。
+      </p>
+
+      <h3>缺失的约束</h3>
+      <div class="highlight-box red">
+        <b>不要求</b> <code>ITERATIONS.md</code> 留痕、<b>不要求</b> <code>ncu</code> profile、
+        <b>没有</b> anti-reward-hacking 段。
+        Anti-Patterns 7 项中<b>没有</b> "don't fp16-cheat" 或 "don't fallback to baseline"。
+        结果: P52/P39/P37 出现 <code>return torch.argmin(x, dim)</code> 等套壳 baseline。
+      </div>
+
+      <div class="highlight-box red">
+        <b>L1 真实率 28%</b> · <b>L2 真实率 10%</b> · fp32 strict 复测
+      </div>
+    </div>
+  </div><!-- /fw-tabs -->
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- §3  横向对比 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section id="comparison">
+  <h2>§3 &nbsp; 横向对比</h2>
+
+  <table class="cmp-table">
+    <thead>
+      <tr>
+        <th>维度</th>
+        <th>ako4all</th>
+        <th>program_md</th>
+        <th>program_kb</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Prompt 长度</b></td>
+        <td>TASK.md 36 行 + HINTS.md 10 行</td>
+        <td>program.md 909 行 (KB 模式用 Phase B)</td>
+        <td>program_kb.md 388 行</td>
+      </tr>
+      <tr>
+        <td><b>设计哲学</b></td>
+        <td>文件驱动 · LLM 自律</td>
+        <td>model-level 三阶段编排</td>
+        <td>KB-native 快速循环</td>
+      </tr>
+      <tr>
+        <td><b>强制 ncu profile</b></td>
+        <td class="g">✓ 不可跳过</td>
+        <td class="dim">有提及但非强制</td>
+        <td class="r">✗ 无</td>
+      </tr>
+      <tr>
+        <td><b>迭代留痕</b></td>
+        <td class="g">ITERATIONS.md 强制</td>
+        <td class="dim">results.tsv 记录</td>
+        <td class="r">✗ 无</td>
+      </tr>
+      <tr>
+        <td><b>反 reward hacking</b></td>
+        <td class="g">TASK.md 显式禁止 4 类</td>
+        <td class="dim">Anti-Patterns 12 项 (无 dtype)</td>
+        <td class="r">Anti-Patterns 7 项 (无 dtype / 无 baseline)</td>
+      </tr>
+      <tr>
+        <td><b>dtype 策略</b></td>
+        <td>不推荐 cast · 依赖 ncu 引导</td>
+        <td>Tier 3 推 TF32 (理论正确)</td>
+        <td>显式鼓励 fp16/bf16 tensor core</td>
+      </tr>
+      <tr>
+        <td><b>Stall 机制</b></td>
+        <td class="g">3 iter 无改进 → 强制 ncu + 换方向</td>
+        <td>Decision Framework (边际收益)</td>
+        <td>15+ exp 无改进则换题</td>
+      </tr>
+      <tr>
+        <td><b>L1 真实率</b></td>
+        <td class="g">77%</td>
+        <td>42%</td>
+        <td class="r">28%</td>
+      </tr>
+      <tr>
+        <td><b>L2 真实率</b></td>
+        <td class="g">83%</td>
+        <td class="dim">—</td>
+        <td class="r">10%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>关键差异三点总结</h3>
+  <div class="key-point">
+    <div class="icon" style="background:var(--green-bg); color:var(--green);">1</div>
+    <div class="body"><b>强制 profiling 是唯一有效的反作弊手段。</b>
+      ako4all 把 <code>ncu</code> 从"建议"升级为"不可跳过"，让 LLM 看到真实瓶颈而非乱套 cast。</div>
+  </div>
+  <div class="key-point">
+    <div class="icon" style="background:var(--indigo-bg); color:var(--indigo);">2</div>
+    <div class="body"><b>迭代留痕 = 策略回退能力。</b>
+      <code>ITERATIONS.md</code> 不只是记录，更是 stall rule 的判断依据 —— 让框架能从错误路径退回。</div>
+  </div>
+  <div class="key-point">
+    <div class="icon" style="background:var(--red-bg); color:var(--red);">3</div>
+    <div class="body"><b>prompt 越激进，假阳性越高。</b>
+      program_kb 显式鼓励 tensor core + 无 anti-cheat → 72% 的声明加速实为虚假。</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- §4  方法学: 假阳性 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section id="methodology">
+  <h2>§4 &nbsp; 方法学: 假阳性四种机制</h2>
+
+  <p style="color:var(--dim); margin-bottom:16px;">
+    KernelBench 默认验收 (<code>atol=1e-2</code>) 让"答案不一样但靠近"的 kernel 也算 PASS。
+    本评测出现的假阳性集中在 4 个机制：
+  </p>
+
+  <div class="mech-grid">
+    <div class="mech-card" style="border-top: 3px solid var(--amber);">
+      <div class="num" style="color:var(--amber);">①</div>
+      <div class="label">精度截断 (truncation)</div>
+      <p>kernel 用 fp16/bf16 做 reduction，舍入 ≪ 1e-2 → PASS。
+        fp32 strict 复测被打掉。<br>
+        <b>典型:</b> ako4all P23 Softmax 31.52× claim。<br>
+        <b>Verdict:</b> <code>fake_truncation_or_precision</code></p>
+    </div>
+    <div class="mech-card" style="border-top: 3px solid var(--red);">
+      <div class="num" style="color:var(--red);">②</div>
+      <div class="label">dtype cast 作弊</div>
+      <p>直接 <code>.to(half)</code> / <code>.to(bfloat16)</code> 兑换 tensor core 速度。<br>
+        <b>典型:</b> P40 LayerNorm — ako4all 6.98× 真实通过 vs program_kb 7.54× 被当场识破。<br>
+        <b>Verdict:</b> <code>fake_precision_cheat</code></p>
+    </div>
+    <div class="mech-card" style="border-top: 3px solid var(--muted);">
+      <div class="num" style="color:var(--muted);">③</div>
+      <div class="label">baseline fallback (套壳)</div>
+      <p>LLM 直接写 <code>return torch.argmin(x, dim)</code> 之类的 PyTorch 原 op，
+        数值一致所以 fp32 复测也通过，但根本没做优化。<br>
+        <b>典型:</b> program_kb P52/P39/P37。<br>
+        <b>Verdict:</b> <code>real_fp32</code>（当前 pipeline 盲点）</p>
+    </div>
+    <div class="mech-card" style="border-top: 3px solid var(--orange);">
+      <div class="num" style="color:var(--orange);">④</div>
+      <div class="label">Logic bug + 弱 atol 漏检</div>
+      <p>kernel 算错了（公式/下标/padding 错），但输出形状对、数值偶然落在 atol=1e-2 内。
+        conv_transposed 系列高发。<br>
+        <b>典型:</b> program_md P58 conv_transposed_3D 6.43× → fp32 & fp16 都 fail。<br>
+        <b>Verdict:</b> <code>fake_logic_bug</code></p>
+    </div>
+  </div>
+
+  <div class="highlight-box green">
+    <b>为什么 ako4all 真实率高 (77%)?</b>
+    不是它不出错，而是其工作流把上述 4 个模式都抑制住了：强制 <code>ncu</code> profile 让 LLM 看瓶颈而非乱套 cast、
+    TF32 toggle 是 fp32 路径的真实加速（非精度兑换）、<code>ITERATIONS.md</code> 让 fp16 失败被回退而不是被放过、
+    <code>TASK.md</code> 显式禁止 reward hacking。
+  </div>
+
+  <h3>三层复测流程</h3>
+
+  <table class="verdict-tbl">
+    <thead>
+      <tr>
+        <th>Tier</th>
+        <th>atol / 流程</th>
+        <th>抓什么</th>
+        <th>命中 Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Tier 1</b></td>
+        <td>fp32 strict <code>atol=1e-4</code></td>
+        <td>dtype cheat + 弱 atol 漏过的 logic bug</td>
+        <td><code>real_fp32</code> / <code>fake_precision_cheat</code> / <code>fake_logic_bug</code></td>
+      </tr>
+      <tr>
+        <td><b>Tier 2</b></td>
+        <td>fp16 fallback (仅 Tier 1 OOM/fail 时)</td>
+        <td>区分"真的 OOM 只能 fp16" vs "故意 fp16"</td>
+        <td><code>real_fp16_oom_verified</code> / <code>fake_or_broken</code></td>
+      </tr>
+      <tr>
+        <td><b>Tier 3</b></td>
+        <td>chunked fp32 sanity (可选)</td>
+        <td>truncation 在更大 input 下发散</td>
+        <td><code>fake_truncation_or_precision</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box amber">
+    <b>盲点提醒:</b> baseline fallback（第③类）三层都会通过，verdict 上是 <code>real_fp32</code> 但不是真优化 ——
+    判断仍需读 <code>kernel.py</code> 源码。
+  </div>
+
+  <h3>Verdict 类别说明</h3>
+  <table class="verdict-tbl">
+    <thead>
+      <tr><th>Verdict</th><th>含义</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>real_fp32</code></td><td>fp32 strict 通过，加速真实</td></tr>
+      <tr><td><code>real_fp16_oom_verified</code></td><td>fp32 OOM，fp16 通过且 chunked sanity 通过</td></tr>
+      <tr><td><code>fake_precision_cheat</code></td><td>kernel 内含显式 dtype cast，fp32 strict 失败</td></tr>
+      <tr><td><code>fake_logic_bug</code></td><td>kernel 实现错误，弱 atol 误放过</td></tr>
+      <tr><td><code>fake_truncation_or_precision</code></td><td>fp16 通过但 chunked fp32 揭穿 truncation/精度</td></tr>
+      <tr><td><code>fake_or_broken</code></td><td>两层都失败</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- §5  术语速查 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section id="glossary">
+  <h2>§5 &nbsp; 术语速查表</h2>
+
+  <table class="glossary">
+    <thead>
+      <tr><th>术语</th><th>简释</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>GPU Kernel</td><td>在 GPU 上运行的计算函数。深度学习中的矩阵乘法、归一化、注意力等算子最终都编译为 kernel。</td></tr>
+      <tr><td>CUDA</td><td>NVIDIA 的 GPU 编程框架。直接写 CUDA C++ 可以精细控制硬件，门槛高但性能上限也高。</td></tr>
+      <tr><td>Triton</td><td>OpenAI 的 GPU 编程语言。用 Python-like 语法写 kernel，自动处理 tiling 和内存管理，比 CUDA 简单但灵活性稍低。</td></tr>
+      <tr><td>cuBLAS</td><td>NVIDIA 的线性代数库。提供高度优化的 matmul 等操作，通常是性能下限。</td></tr>
+      <tr><td>atol / rtol</td><td>绝对容差 / 相对容差。用于判断两个张量"数值上是否一致"。atol=1e-2 很宽松，1e-4 较严格。</td></tr>
+      <tr><td>fp32 / fp16 / bf16</td><td>浮点精度：32 位（标准）、16 位（半精度）、bfloat16（指数位多、表示范围大但小数少）。精度越低计算越快但误差越大。</td></tr>
+      <tr><td>TF32</td><td>Tensor Float 32。NVIDIA Ampere+ GPU 的计算模式：用 19 位精度跑在 tensor core 上，速度接近 fp16 但精度接近 fp32。</td></tr>
+      <tr><td>ncu</td><td>Nsight Compute。NVIDIA 的 kernel profiler，可以看到每个 kernel 的内存带宽、计算利用率、瓶颈在哪。</td></tr>
+      <tr><td>Roofline</td><td>性能分析模型。以"计算强度"（FLOP/byte）为 X 轴，判断 kernel 是 memory-bound 还是 compute-bound。</td></tr>
+      <tr><td>Agent 循环</td><td>LLM 自主修改代码 → 运行 benchmark → 保留改进 / 回退失败 → 重复。无需人工干预的自动优化流程。</td></tr>
+      <tr><td>假阳性</td><td>框架声称加速成功但实际不正确或不真实的结果。常见于 dtype cheat、logic bug 等。</td></tr>
+      <tr><td>KernelBench</td><td>斯坦福发布的 GPU 算子优化评测集，4 个难度级别共数百题。</td></tr>
+      <tr><td>Tensor Core</td><td>NVIDIA GPU 上的矩阵运算加速硬件单元。需要特定精度（fp16/bf16/TF32）才能启用。</td></tr>
+      <tr><td>Speedup</td><td>加速比。优化后 kernel 的执行时间 / 参考实现的执行时间。>1× 表示更快。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- Bottom navigation -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="bottom-nav">
+  <a href="index.html">&larr; 首页</a>
+  <span>
+    <a href="l1/">L1 评测报告 &rarr;</a> &nbsp;&middot;&nbsp;
+    <a href="l2/">L2 评测报告 &rarr;</a>
+  </span>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  <div class="container">
+    Generated from <code>better_kernels</code> &middot;
+    <a href="https://github.com/zaxliu/kernel-reports" target="_blank">GitHub Source</a>
+  </div>
+</footer>
+
+<!-- Tab switching -->
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabId = btn.dataset.tab;
+    // deactivate all
+    btn.closest('.fw-tabs').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.closest('.fw-tabs').querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    // activate selected
+    btn.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>

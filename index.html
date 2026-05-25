@@ -3,128 +3,191 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kernel Reports · Agent-loop GPU Kernel Optimization</title>
+<title>Kernel Reports — Agent 循环式 GPU Kernel 自动优化评测</title>
 <style>
 :root {
-  --bg: #0b1020; --bg2: #0f172a; --card: #111827; --border: #1f2937;
-  --text: #e5e7eb; --dim: #94a3b8; --muted: #64748b; --accent: #38bdf8;
-  --green: #10b981; --indigo: #6366f1; --amber: #f59e0b;
+  --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff; --border: #e2e5ea;
+  --text: #1a1d23; --dim: #4b5263; --muted: #8b92a0; --accent: #2563eb;
+  --green: #059669; --indigo: #4f46e5; --amber: #d97706;
+  --orange: #ea580c; --red: #dc2626; --rose: #e11d48;
+  --table-header: #f1f3f6;
+  --green-bg: #ecfdf5; --indigo-bg: #eef2ff; --amber-bg: #fffbeb; --red-bg: #fef2f2;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --code-bg: #f4f5f7; --code-text: #1e293b;
 }
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
-  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue",
-  "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14.5px; line-height: 1.6; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+    "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 15px; line-height: 1.6; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-  font-size: 13px; background: #1e293b; padding: 1px 6px; border-radius: 4px;
-  border: 1px solid #334155; }
-.container { max-width: 920px; margin: 0 auto; padding: 56px 24px 96px; }
-.hero { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-  border: 1px solid var(--border); border-radius: 14px; padding: 32px 36px;
-  margin-bottom: 32px; }
-.hero h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #38bdf8, #a78bfa);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.hero .sub { color: var(--dim); font-size: 14px; }
-.report-grid { display: grid; gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-.report { background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 22px 24px; transition: border-color 0.15s; }
-.report:hover { border-color: var(--accent); }
-.report.disabled { opacity: 0.45; }
-.report h2 { margin: 0 0 6px; font-size: 18px; color: #f8fafc; }
-.report .tag { color: var(--dim); font-size: 12px; text-transform: uppercase;
-  letter-spacing: 0.06em; margin-bottom: 10px; font-family: "JetBrains Mono", monospace; }
-.report p { color: #cbd5e1; margin: 0 0 14px; font-size: 13.5px; }
-.report .stat { color: var(--dim); font-size: 12.5px; margin-bottom: 14px; }
-.report .stat b { color: var(--green); }
-.report .open { display: inline-block; padding: 7px 14px;
-  border: 1px solid var(--accent); color: var(--accent); border-radius: 8px;
-  font-size: 13px; }
-.report .open:hover { background: rgba(56,189,248,0.08); text-decoration: none; }
-.report.disabled .open { border-color: var(--muted); color: var(--muted);
-  pointer-events: none; }
-footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 56px;
-  padding-top: 24px; border-top: 1px solid var(--border); }
+  font-size: 13px; background: var(--code-bg); color: var(--code-text);
+  padding: 2px 6px; border-radius: 4px; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+/* ── Hero ── */
+.hero {
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fefce8 100%);
+  padding: 48px 0 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--text); margin-bottom: 8px; }
+.hero .sub { color: var(--dim); font-size: 15px; max-width: 640px; line-height: 1.5; }
+.hero .meta { color: var(--muted); font-size: 13px; margin-top: 12px; }
+.hero .meta b { color: var(--dim); font-weight: 500; }
+
+/* ── Concept cards ── */
+.concepts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  margin: 36px 0 0; }
+.concept { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 22px; box-shadow: var(--shadow-sm); }
+.concept .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.concept p { color: var(--dim); font-size: 13.5px; line-height: 1.55; }
+
+/* ── KPI cards ── */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  margin: 32px 0 0; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.kpi .value { font-size: 28px; font-weight: 700; line-height: 1; }
+.kpi .label { color: var(--dim); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.05em; margin-top: 6px; }
+.kpi .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+/* ── Nav cards ── */
+.nav-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  margin: 36px 0 48px; }
+.nav-card { display: block; background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px 26px; box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s; text-decoration: none; }
+.nav-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md);
+  text-decoration: none; }
+.nav-card h3 { font-size: 17px; color: var(--text); margin-bottom: 6px; }
+.nav-card p { color: var(--dim); font-size: 13.5px; margin-bottom: 10px; }
+.nav-card .stat { font-size: 12px; color: var(--muted); }
+.nav-card .stat b { font-weight: 600; }
+.nav-card .stat .g { color: var(--green); }
+.nav-card .arrow { color: var(--accent); font-size: 13px; font-weight: 500; }
+.nav-card.disabled { opacity: 0.45; pointer-events: none; }
+
+/* ── Footer ── */
+footer { color: var(--muted); font-size: 12px; text-align: center;
+  padding: 24px 0 32px; border-top: 1px solid var(--border); }
+
+@media (max-width: 720px) {
+  .concepts { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .nav-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 24px; }
+}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <div class="hero">
-    <h1>Kernel Reports</h1>
+<div class="hero">
+  <div class="container">
+    <h1>让 AI 写 GPU 高性能代码</h1>
     <div class="sub">
-      Agent-loop driven GPU kernel optimization benchmark · 8× RTX 5090 ·
-      <a href="https://github.com/ScalingIntelligence/KernelBench" target="_blank">KernelBench</a>
-      L1 / L2 / L3 across ako4all, AutoKernel (program_md / program_kb)
-      and KernelAgent
+      3 个 Agent 框架在 200 道算子优化题上的全自动评测。
+      每题由 LLM 自主迭代优化 GPU kernel，再用 fp32 严格标准逐题验证真伪。
+    </div>
+    <div class="meta">
+      <b>2026-05</b> ·
+      <a href="https://scalingintelligence.stanford.edu/blogs/kernelbench/" target="_blank">KernelBench</a> L1 + L2 ·
+      8&times; RTX 5090 (sm_120)
     </div>
   </div>
-
-  <div class="report-grid">
-    <div class="report">
-      <h2>L1 完整评测报告</h2>
-      <div class="tag">100 题 · 3 框架 · fp32 strict 复测</div>
-      <p>对 ako4all / AutoKernel program_md / program_kb 的 100 题逐题分析,
-        含 fp32 strict atol=1e-4 三层复测、verdict 分类、假阳性聚合
-        以及 149 个 framework-problem 段的真实 kernel.py 代码。</p>
-      <div class="stat">
-        ako4all <b>77%</b> · program_md 42% · program_kb 28%
-      </div>
-      <a class="open" href="l1/">查看报告 →</a>
-    </div>
-
-    <div class="report disabled">
-      <h2>L2 完整评测报告</h2>
-      <div class="tag">100 题 · 3 框架 · 制作中</div>
-      <p>L2 (fused pattern) 100 题已完成评测和三层复测,
-        报告正在生成。</p>
-      <div class="stat">即将上线</div>
-      <a class="open" href="l2/">查看报告 →</a>
-    </div>
-
-    <div class="report disabled">
-      <h2>L3 完整评测报告</h2>
-      <div class="tag">50 题 · 模型级 · 排队中</div>
-      <p>L3 (模型级) 评测尚未启动。</p>
-      <div class="stat">未开始</div>
-      <a class="open" href="l3/">查看报告 →</a>
-    </div>
-
-    <div class="report">
-      <h2>AKG-Agents v2 深度介绍</h2>
-      <div class="tag">框架研究 · 14 天逆向 · 16 章</div>
-      <p>华为 MindSpore AKG-Agents v2 multi-agent kernel gen 框架完整拆解：
-        三层架构、UCB/Evolve/AutoResearch 三种搜索、SkillEvolution 4 模式、
-        4×7 横向对比 (AKG/AutoKernel/KernelAgent/AKO4ALL)，以及
-        RTX 5090 复用清单。</p>
-      <div class="stat">
-        原创度 ~30% · NVIDIA SKILL.md <b>22-25%</b> 独特度
-      </div>
-      <a class="open" href="akg/">查看研究 →</a>
-    </div>
-
-    <div class="report">
-      <h2>AKG-Agents v2 · L1 复测</h2>
-      <div class="tag">100 题 · RTX 5090 · harness 统一标准</div>
-      <p>用 KernelBench atol=1e-4 严判 AKG-Agents v2 生成的 98 个 L1 kernel。
-        揭示 AKG 内部 verifier 容差（fp32 2%/2% population）与 harness 相差
-        ~200×，自报 PASS 与真 PASS 的 gap，以及 P88=8.85× 等真加速明星。</p>
-      <div class="stat">
-        AKG self <b>65%</b> · harness strict <b>16%</b> · gap 49 题
-      </div>
-      <a class="open" href="akg/l1_reeval.html">查看复测 →</a>
-    </div>
-  </div>
-
-  <footer>
-    Generated from <code>better_kernels</code> /
-    <a href="https://github.com/zaxliu/kernel-reports" target="_blank">github source</a>
-  </footer>
 </div>
 
-<script async defer src="https://hypothes.is/embed.js"></script>
+<div class="container">
+
+  <!-- Concepts -->
+  <div class="concepts">
+    <div class="concept">
+      <div class="label">GPU Kernel</div>
+      <p>GPU 上运行的计算函数。深度学习中的矩阵乘法、归一化、注意力等算子最终都编译为 kernel。
+        手写高性能 CUDA kernel 需要极深的硬件知识。</p>
+    </div>
+    <div class="concept">
+      <div class="label">Agent 循环</div>
+      <p>受 Karpathy
+        <a href="https://github.com/karpathy/autoresearch" target="_blank">autoresearch</a>
+        启发：LLM 自主修改代码 &rarr; 运行 benchmark &rarr; 保留改进 / 回退失败 &rarr; 重复。
+        无需人工干预，一夜可跑 100+ 次迭代。</p>
+    </div>
+    <div class="concept">
+      <div class="label">KernelBench</div>
+      <p>斯坦福发布的算子优化评测集。4 个难度级别：L1 单算子、L2 算子融合、L3 模型级、L4 HuggingFace 模型。
+        每题给出参考实现，要求生成更快且<b>数值正确</b>的 kernel。</p>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi" style="border-top: 3px solid var(--green)">
+      <div class="value" style="color: var(--green)">77% / 83%</div>
+      <div class="label">ako4all 真实通过率</div>
+      <div class="sub">L1 / L2 · fp32 strict 复测</div>
+    </div>
+    <div class="kpi" style="border-top: 3px solid var(--red)">
+      <div class="value" style="color: var(--red)">72%</div>
+      <div class="label">最高假阳性比例</div>
+      <div class="sub">program_kb · 弱容差下声明为虚假</div>
+    </div>
+    <div class="kpi" style="border-top: 3px solid var(--accent)">
+      <div class="value" style="color: var(--accent)">200</div>
+      <div class="label">逐题数据</div>
+      <div class="sub">L1 + L2 · 含 kernel 源码</div>
+    </div>
+    <div class="kpi" style="border-top: 3px solid var(--indigo)">
+      <div class="value" style="color: var(--indigo)">ncu</div>
+      <div class="label">关键差异</div>
+      <div class="sub">强制 profiling 是唯一有效反作弊</div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-grid">
+    <a class="nav-card" href="frameworks.html">
+      <h3>框架原理与对比</h3>
+      <p>什么是 KernelBench？autoresearch 范式如何工作？三个框架的设计差异在哪里？为什么真实率差距这么大？</p>
+      <div class="stat">KernelBench &middot; autoresearch &middot; ako4all &middot; AutoKernel</div>
+      <div class="arrow">查看详情 &rarr;</div>
+    </a>
+    <a class="nav-card" href="l1/">
+      <h3>L1 评测 &mdash; 100 题单算子</h3>
+      <p>matmul、softmax、LayerNorm 等基础算子的逐题评测。149 个 framework&times;problem 组合的 verdict、kernel 源码与迭代轨迹。</p>
+      <div class="stat">ako4all <b class="g">77%</b> &middot; program_md 42% &middot; program_kb 28%</div>
+      <div class="arrow">查看报告 &rarr;</div>
+    </a>
+    <a class="nav-card" href="l2/">
+      <h3>L2 评测 &mdash; 100 题融合算子</h3>
+      <p>3-6 op 融合链的逐题评测。ako4all 真实率从 77% 升到 83%（代数化简空间），program_kb 从 28% 跌到 10%（ConvTranspose 复杂度）。</p>
+      <div class="stat">ako4all <b class="g">83%</b> &middot; program_md — &middot; program_kb 10%</div>
+      <div class="arrow">查看报告 &rarr;</div>
+    </a>
+    <a class="nav-card" href="akg/">
+      <h3>AKG-Agents v2 研究</h3>
+      <p>华为 MindSpore AKG-Agents 多 Agent kernel 生成框架拆解 + L1 复测（自报 65% vs harness 16%）。</p>
+      <div class="stat">框架研究 &middot; 16 章 &middot; L1 复测</div>
+      <div class="arrow">查看研究 &rarr;</div>
+    </a>
+  </div>
+
+</div>
+
+<footer>
+  <div class="container">
+    Generated from <code>better_kernels</code> &middot;
+    <a href="https://github.com/zaxliu/kernel-reports" target="_blank">GitHub Source</a>
+  </div>
+</footer>
 
 </body>
 </html>

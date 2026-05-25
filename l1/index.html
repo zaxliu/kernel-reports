@@ -5,56 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KernelBench L1 完整评测报告 · 8× RTX 5090</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 <style>
 :root {
-  --bg: #0b1020;
-  --bg2: #0f172a;
-  --card: #111827;
-  --border: #1f2937;
-  --text: #e5e7eb;
-  --dim: #94a3b8;
-  --muted: #64748b;
-  --accent: #38bdf8;
+  --bg: #ffffff;
+  --bg2: #f8f9fb;
+  --card: #ffffff;
+  --border: #e2e5ea;
+  --text: #1a1d23;
+  --dim: #4b5263;
+  --muted: #8b92a0;
+  --accent: #2563eb;
   --green: #10b981;
   --red: #ef4444;
   --orange: #f97316;
   --indigo: #6366f1;
   --amber: #f59e0b;
   --rose: #f43f5e;
+  --table-header: #f1f3f6;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --code-bg: #f4f5f7;
+  --code-text: #1e293b;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg);
   color: var(--text); font-family: -apple-system, "SF Pro Text", "Segoe UI",
-  Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  Roboto, "Helvetica Neue", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   font-size: 14.5px; line-height: 1.6; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 code, pre { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px; }
-code { background: #1e293b; padding: 1px 6px; border-radius: 4px;
-  border: 1px solid #334155; color: #e2e8f0; }
-h1, h2, h3 { color: #f8fafc; font-weight: 600; }
+code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--border); color: var(--code-text); }
+h1, h2, h3 { color: var(--text); font-weight: 600; }
 h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
 h2 { font-size: 22px; margin: 56px 0 16px; padding-bottom: 8px;
-  border-bottom: 1px solid var(--border); }
-h3 { font-size: 16px; margin: 24px 0 10px; color: #cbd5e1; }
+  border-bottom: 2px solid var(--border); }
+h3 { font-size: 16px; margin: 24px 0 10px; color: var(--dim); }
 .container { max-width: 1180px; margin: 0 auto; padding: 32px 24px 96px; }
-.hero { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+.hero { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fefce8 100%);
   border: 1px solid var(--border); border-radius: 14px;
   padding: 28px 32px; margin-bottom: 32px;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset; }
-.hero h1 { background: linear-gradient(90deg, #38bdf8, #a78bfa);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  box-shadow: var(--shadow-sm); }
+.hero h1 { color: var(--text); }
 .hero .meta { color: var(--dim); font-size: 13.5px; margin-top: 4px; }
-.hero .meta strong { color: #cbd5e1; font-weight: 500; }
+.hero .meta strong { color: var(--text); font-weight: 500; }
 .kpi { display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 14px; margin-top: 24px; }
 .kpi-card { background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 18px 20px; }
+  border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
 .kpi-card .label { color: var(--dim); font-size: 12px; text-transform: uppercase;
   letter-spacing: 0.06em; margin-bottom: 6px; }
 .kpi-card .value { font-size: 30px; font-weight: 700; line-height: 1; }
@@ -67,15 +71,15 @@ h3 { font-size: 16px; margin: 24px 0 10px; color: #cbd5e1; }
 .row.cols-2 { grid-template-columns: 1fr 1fr; }
 .row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 .card { background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 20px 22px; }
+  border-radius: 12px; padding: 20px 22px; box-shadow: var(--shadow-sm); }
 .card .h { font-size: 13px; color: var(--dim); text-transform: uppercase;
   letter-spacing: 0.05em; margin-bottom: 12px; }
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 table th, table td { padding: 8px 10px; border-bottom: 1px solid var(--border);
   text-align: left; vertical-align: top; }
-table th { color: var(--dim); font-weight: 500; font-size: 12px;
-  text-transform: uppercase; letter-spacing: 0.04em; }
-table tr:hover td { background: rgba(56, 189, 248, 0.04); }
+table th { color: var(--dim); font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.04em; background: var(--table-header); }
+table tr:hover td { background: rgba(37, 99, 235, 0.04); }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px;
   font-size: 11.5px; font-weight: 500; line-height: 1.5;
   border: 1px solid currentColor; opacity: 0.95; }
@@ -87,35 +91,35 @@ canvas { max-width: 100%; }
   margin: 18px 0 14px; }
 .tab { padding: 8px 14px; cursor: pointer; color: var(--dim);
   border-bottom: 2px solid transparent; font-size: 13.5px; user-select: none; }
-.tab.active { color: #f8fafc; border-bottom-color: var(--accent); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
 .controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
   align-items: center; }
-.controls input, .controls select { background: #0b1228;
+.controls input, .controls select { background: var(--bg);
   border: 1px solid var(--border); color: var(--text); border-radius: 8px;
   padding: 7px 10px; font-size: 13px; outline: none; }
 .controls input:focus, .controls select:focus { border-color: var(--accent); }
 .controls .filter-chip { padding: 5px 10px; border-radius: 999px;
   font-size: 12px; cursor: pointer; user-select: none;
   border: 1px solid var(--border); color: var(--dim); }
-.controls .filter-chip.active { background: rgba(56, 189, 248, 0.15);
-  border-color: var(--accent); color: #f0f9ff; }
+.controls .filter-chip.active { background: rgba(37, 99, 235, 0.1);
+  border-color: var(--accent); color: var(--accent); }
 .problem-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .problem-row { background: var(--card); border: 1px solid var(--border);
   border-radius: 10px; padding: 12px 16px; cursor: pointer;
   transition: border-color 0.15s; }
-.problem-row:hover { border-color: #334155; }
+.problem-row:hover { border-color: var(--accent); }
 .problem-row .top { display: flex; align-items: center; gap: 10px;
   flex-wrap: wrap; }
 .problem-row .pid { font-family: "JetBrains Mono", monospace;
-  font-weight: 600; color: #f8fafc; min-width: 36px; }
-.problem-row .name { color: #cbd5e1; }
+  font-weight: 600; color: var(--text); min-width: 36px; }
+.problem-row .name { color: var(--dim); }
 .problem-row .speedup { font-family: "JetBrains Mono", monospace;
   font-weight: 600; }
 .problem-row .speedup.real { color: var(--green); }
 .problem-row .speedup.fake { color: var(--red); }
 .problem-row .details { display: none; margin-top: 10px;
   padding-top: 10px; border-top: 1px solid var(--border);
-  color: #cbd5e1; font-size: 13px; }
+  color: var(--dim); font-size: 13px; }
 .problem-row.open .details { display: block; }
 .problem-row .details .kv { display: grid;
   grid-template-columns: 110px 1fr; gap: 4px 12px; margin: 6px 0; }
@@ -123,11 +127,11 @@ canvas { max-width: 100%; }
   text-transform: uppercase; letter-spacing: 0.04em; padding-top: 2px; }
 .empty { color: var(--muted); text-align: center; padding: 40px 0; }
 .note { color: var(--dim); font-size: 13px; padding: 10px 14px;
-  background: rgba(99, 102, 241, 0.08); border-left: 3px solid var(--indigo);
+  background: rgba(37, 99, 235, 0.06); border-left: 3px solid var(--indigo);
   border-radius: 0 8px 8px 0; margin: 14px 0; }
-.warn { background: rgba(249, 115, 22, 0.08);
+.warn { background: rgba(249, 115, 22, 0.06);
   border-left-color: var(--orange); }
-.toc { position: sticky; top: 0; background: rgba(11,16,32,0.92);
+.toc { position: sticky; top: 0; background: rgba(255,255,255,0.92);
   backdrop-filter: blur(8px); z-index: 10; padding: 10px 0;
   border-bottom: 1px solid var(--border); margin-bottom: 24px;
   font-size: 13px; }
@@ -144,74 +148,73 @@ canvas { max-width: 100%; }
   font-size: 14px; font-weight: 500; color: var(--dim);
   border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0;
   transition: all 0.15s; font-family: "JetBrains Mono", monospace; }
-.fw-tab:hover { background: rgba(56, 189, 248, 0.06); color: #f0f9ff; }
-.fw-tab.active { background: rgba(56, 189, 248, 0.08);
+.fw-tab:hover { background: rgba(37, 99, 235, 0.06); color: var(--text); }
+.fw-tab.active { background: rgba(37, 99, 235, 0.08);
   border-bottom-width: 2px; border-bottom-style: solid; }
 .fw-panel { display: none; }
 .fw-panel.active { display: block; }
-.fw-panel .lead { color: #cbd5e1; line-height: 1.7; font-size: 14.5px;
+.fw-panel .lead { color: var(--dim); line-height: 1.7; font-size: 14.5px;
   margin: 8px 0 18px; }
-.fw-panel .meta-line { color: var(--dim); font-size: 12.5px; margin-bottom: 14px; }
-.fw-panel h4 { color: #f1f5f9; margin: 22px 0 10px;
+.fw-panel .meta-line { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+.fw-panel h4 { color: var(--text); margin: 22px 0 10px;
   font-size: 14px; font-weight: 600; letter-spacing: 0.01em;
   border-left: 3px solid; padding-left: 10px; }
-.fw-panel pre.tree { background: #0a0f1f; border: 1px solid var(--border);
+.fw-panel pre.tree { background: var(--code-bg); border: 1px solid var(--border);
   border-radius: 8px; padding: 14px 16px; font-size: 12.5px;
-  line-height: 1.55; color: #cbd5e1; overflow-x: auto;
+  line-height: 1.55; color: var(--dim); overflow-x: auto;
   margin: 8px 0; }
 .fw-panel pre.tree .anno { color: var(--muted); }
-.fw-panel pre.tree .star { color: #f59e0b; }
-.fw-panel ul.steps { padding-left: 22px; color: #cbd5e1;
+.fw-panel pre.tree .star { color: #d97706; }
+.fw-panel ul.steps { padding-left: 22px; color: var(--dim);
   line-height: 1.75; margin: 8px 0 0; }
-.fw-panel ul.steps li b { color: #f1f5f9; }
-.fw-panel table.keyfiles { width: 100%; }
+.fw-panel ul.steps li b { color: var(--text); }
 .fw-panel table.keyfiles td:first-child { font-family: "JetBrains Mono", monospace;
   white-space: nowrap; padding-right: 16px; }
 .fw-panel .pill { display: inline-block; padding: 2px 8px; border-radius: 5px;
   font-size: 11px; font-family: "JetBrains Mono", monospace;
-  background: #1e293b; border: 1px solid #334155; color: #cbd5e1;
+  background: var(--code-bg); border: 1px solid var(--border); color: var(--dim);
   margin-left: 6px; }
 /* ---- 核心 playbook 解构 折叠块 (在每个 fw-panel 内) ---- */
 details.playbook { margin-top: 18px; border: 1px solid var(--border);
   border-left-width: 3px; border-radius: 8px;
-  background: rgba(15, 23, 42, 0.45); }
+  background: var(--bg2); }
 details.playbook > summary { cursor: pointer; padding: 11px 16px;
-  font-weight: 600; color: #e2e8f0; font-size: 14px;
+  font-weight: 600; color: var(--text); font-size: 14px;
   list-style: none; user-select: none; }
 details.playbook > summary::before { content: "▸ "; color: var(--muted);
   transition: transform 0.15s; display: inline-block; }
 details.playbook[open] > summary::before { content: "▾ "; }
-details.playbook > summary:hover { background: rgba(56, 189, 248, 0.04); }
-details.playbook .playbook-body { padding: 4px 18px 14px; color: #cbd5e1;
+details.playbook > summary:hover { background: rgba(37, 99, 235, 0.04); }
+details.playbook .playbook-body { padding: 4px 18px 14px; color: var(--dim);
   line-height: 1.7; font-size: 13.5px; }
 details.playbook .playbook-body ul { padding-left: 22px; margin: 6px 0 10px; }
 details.playbook .playbook-body ul li { margin-bottom: 6px; }
 details.playbook .playbook-body code { font-size: 12.5px;
-  background: #1e293b; padding: 1px 5px; border-radius: 3px; color: #f59e0b; }
-details.playbook .playbook-body strong { color: #f1f5f9; }
+  background: var(--code-bg); padding: 1px 5px; border-radius: 3px; color: var(--code-text); }
+details.playbook .playbook-body strong { color: var(--text); }
 /* ---- §5 案例章节专用样式 ---- */
 section.cases { margin-top: 28px; }
 section.cases h3 { color: var(--accent); border-bottom: 1px solid var(--border);
   padding-bottom: 6px; margin-top: 36px; }
-section.cases h4 { color: #f1f5f9; margin-top: 22px; }
+section.cases h4 { color: var(--text); margin-top: 22px; }
 section.cases blockquote { border-left: 3px solid var(--accent);
   padding: 8px 14px; margin: 12px 0;
-  background: rgba(56, 189, 248, 0.05); color: #cbd5e1; }
-section.cases pre { background: #0f172a; padding: 12px 14px;
+  background: rgba(37, 99, 235, 0.04); color: var(--dim); }
+section.cases pre { background: var(--code-bg); padding: 12px 14px;
   border-radius: 8px; border: 1px solid var(--border);
   overflow-x: auto; line-height: 1.5; font-size: 12.5px; }
-section.cases pre code { color: #e2e8f0; }
+section.cases pre code { color: var(--code-text); }
 section.cases table.md-tbl { width: 100%; margin: 10px 0;
   border-collapse: collapse; font-size: 13px; }
 section.cases table.md-tbl th, section.cases table.md-tbl td {
   border: 1px solid var(--border); padding: 7px 10px; vertical-align: top;
   text-align: left; }
-section.cases table.md-tbl th { background: rgba(56, 189, 248, 0.06);
-  color: #f0f9ff; font-weight: 600; }
+section.cases table.md-tbl th { background: var(--table-header);
+  color: var(--text); font-weight: 600; }
 section.cases p code, section.cases li code {
-  background: #1e293b; padding: 1px 5px; border-radius: 3px;
-  color: #f59e0b; font-size: 12.5px; }
-section.cases strong { color: #f1f5f9; }
+  background: var(--code-bg); padding: 1px 5px; border-radius: 3px;
+  color: var(--code-text); font-size: 12.5px; }
+section.cases strong { color: var(--text); }
 .kernel-block { margin-top: 12px; padding-top: 12px;
   border-top: 1px dashed var(--border); }
 .kernel-block .kbar { display: flex; flex-wrap: wrap; gap: 10px;
@@ -219,21 +222,26 @@ section.cases strong { color: #f1f5f9; }
   margin-bottom: 8px; }
 .kernel-block .kbar code { font-size: 11.5px; }
 .kernel-block .copy-btn { margin-left: auto; padding: 3px 9px;
-  background: #1e293b; border: 1px solid var(--border);
-  color: #cbd5e1; border-radius: 5px; cursor: pointer; font-size: 11.5px; }
-.kernel-block .copy-btn:hover { border-color: var(--accent); color: #f0f9ff; }
+  background: var(--code-bg); border: 1px solid var(--border);
+  color: var(--dim); border-radius: 5px; cursor: pointer; font-size: 11.5px; }
+.kernel-block .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
 .kernel-block pre[class*="language-"] { max-height: 460px; overflow: auto;
   margin: 0; border-radius: 8px; font-size: 12px; line-height: 1.5;
-  border: 1px solid #1e293b; }
+  border: 1px solid var(--border); }
 .kernel-block pre[class*="language-"] code { background: transparent;
   border: none; padding: 0; font-size: 12px; }
-.kernel-block .snip-note { color: #f59e0b; font-size: 11.5px; }
+.kernel-block .snip-note { color: var(--amber); font-size: 11.5px; }
 .kernel-block .nokernel { color: var(--muted); font-style: italic;
   padding: 10px 14px; font-size: 12.5px;
-  background: rgba(100,116,139,0.06); border-radius: 6px; }
+  background: var(--bg2); border-radius: 6px; }
 </style>
 </head>
 <body>
+<div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 24px;font-size:13px;color:var(--muted)">
+  <a href="../index.html">&larr; 首页</a> &middot;
+  <a href="../frameworks.html">框架介绍</a> &middot;
+  L1 评测报告
+</div>
 <div class="container">
 
   <div class="hero">
@@ -275,359 +283,17 @@ section.cases strong { color: #f1f5f9; }
     <a href="#cheats">假阳性</a>
   </div>
 
-  <h2 id="method">0. 方法学 · 为什么会有假阳性</h2>
-
+  <h2 id="method">0. 方法学摘要</h2>
   <div class="note warn">
-    <strong>口径前提</strong> KernelBench 默认验收
-    <code>atol=1e-2, rtol=1e-2</code> 是为了容忍 fp16 tensor core 舍入而留的,
-    结果让"答案不一样但靠近"的 kernel 也算 PASS。
-    本评测出现的假阳性集中在下面 4 个机制。
+    <strong>口径前提</strong> KernelBench 默认验收 <code>atol=1e-2</code> 让假阳性通过。
+    本评测用 <b>fp32 strict (<code>atol=1e-4</code>)</b> 三层复测逐题验真伪。
+    假阳性有 4 种机制: ① 精度截断 ② dtype cast 作弊 ③ baseline fallback 套壳 ④ logic bug + 弱 atol 漏检。
   </div>
-
-  <div class="row cols-2" style="margin-top:14px">
-    <div class="card" style="border-left:3px solid #f97316">
-      <h3 style="color:#f97316;margin-top:0">① 精度截断 (truncation)</h3>
-      <p style="color:#cbd5e1;line-height:1.65">
-        kernel 用 fp16/bf16 做 reduction,舍入 ≪ 1e-2 → PASS;
-        fp32 strict (<code>atol=1e-4</code>) 复测被打掉。
-      </p>
-      <p style="color:var(--dim);font-size:12.5px;margin-bottom:0">
-        典型: ako4all P23 Softmax 31.52× claim、program_md P15 lower-tri matmul
-        <code>.to(tl.bfloat16)</code>。<br>
-        verdict: <span class="badge" style="color:#f97316">fake_truncation_or_precision</span>
-      </p>
-    </div>
-    <div class="card" style="border-left:3px solid #ef4444">
-      <h3 style="color:#ef4444;margin-top:0">② dtype cast 作弊</h3>
-      <p style="color:#cbd5e1;line-height:1.65">
-        直接 <code>.to(half)</code> / <code>.to(bfloat16)</code>
-        兑换 tensor core 速度。
-      </p>
-      <p style="color:var(--dim);font-size:12.5px;margin-bottom:0">
-        最干净对照: <b>P40 LayerNorm</b> — ako4all 6.98×
-        (fp32 reduction + fp16 IO, 真实) vs program_kb 7.54×
-        (整 kernel 改 half, fp32 strict 当场失败)。<br>
-        verdict: <span class="badge" style="color:#ef4444">fake_precision_cheat</span>
-      </p>
-    </div>
-    <div class="card" style="border-left:3px solid #a855f7">
-      <h3 style="color:#a855f7;margin-top:0">③ baseline_fallback (1.00× 套壳)</h3>
-      <p style="color:#cbd5e1;line-height:1.65">
-        LLM 直接写 <code>return torch.argmin(x, dim)</code>
-        之类 PyTorch 原 op,数值真一致所以 <b>fp32 复测也通过</b>,
-        但根本没做优化。
-      </p>
-      <p style="color:var(--dim);font-size:12.5px;margin-bottom:0">
-        典型: program_kb P52 / P39 / P37。<br>
-        verdict 仍记 <span class="badge" style="color:#10b981">real_fp32</span> —
-        <b>当前 pipeline 的盲点</b>,需读 <code>kernel.py</code> 才能发现。
-      </p>
-    </div>
-    <div class="card" style="border-left:3px solid #dc2626">
-      <h3 style="color:#dc2626;margin-top:0">④ Logic bug + 弱 atol 漏检</h3>
-      <p style="color:#cbd5e1;line-height:1.65">
-        kernel 实际算错 (公式/下标/padding 错),输出形状对、
-        数值偶然落在 atol=1e-2 内。最阴险 — 不是套壳也不是 cheat。
-      </p>
-      <p style="color:var(--dim);font-size:12.5px;margin-bottom:0">
-        conv_transposed 系列高发。典型: program_md P58 conv_transposed_3D
-        6.43× → fp32 strict & fp16 都 fail。<br>
-        verdict: <span class="badge" style="color:#dc2626">fake_logic_bug</span>
-      </p>
-    </div>
-  </div>
-
-  <div class="note" style="margin-top:14px">
-    <strong style="color:#10b981">为什么 ako4all 真实率高 (77%)?</strong>
-    不是它不作弊,而是工作流把 4 个模式都抑制住了:
-    强制 <code>ncu</code> profile 让 LLM 看瓶颈而非乱套 cast、
-    TF32 toggle 是 fp32 路径的真实加速 (非精度兑换)、
-    <code>ITERATIONS.md</code> 让 fp16 失败被回退而不是被放过、
-    TASK.md 显式禁止 reward hacking。
-  </div>
-
-  <h3 style="margin-top:28px">verdict 与三层复测的对应</h3>
-  <div class="card" style="overflow-x:auto">
-    <table style="min-width:680px">
-      <thead><tr>
-        <th>Tier</th><th>atol / 流程</th><th>抓什么</th><th>命中 verdict</th>
-      </tr></thead>
-      <tbody>
-        <tr><td><b>1</b></td>
-          <td>fp32 strict <code>atol=1e-4</code></td>
-          <td>dtype cheat + 弱 atol 漏过的 logic bug</td>
-          <td><span class="badge" style="color:#10b981">real_fp32</span>
-            / <span class="badge" style="color:#ef4444">fake_precision_cheat</span>
-            / <span class="badge" style="color:#dc2626">fake_logic_bug</span></td></tr>
-        <tr><td><b>2</b></td>
-          <td>fp16 fallback (仅 Tier 1 OOM/fail 时)</td>
-          <td>区分"真的 OOM 只能 fp16"vs"故意 fp16"</td>
-          <td><span class="badge" style="color:#14b8a6">real_fp16_oom_verified</span>
-            / <span class="badge" style="color:#a855f7">fake_or_broken</span></td></tr>
-        <tr><td><b>3</b></td>
-          <td>chunked fp32 sanity (可选)</td>
-          <td>truncation 在更大 input 下发散</td>
-          <td><span class="badge" style="color:#f97316">fake_truncation_or_precision</span></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="note warn" style="margin-top:10px">
-    <strong>盲点提醒</strong> baseline_fallback (机制 ③) 三层都会通过,
-    verdict 上是 <code>real_fp32</code> 但不是真优化;判断仍需读 <code>kernel.py</code>。
-  </div>
-
-  <h2 id="frameworks">1. 框架简介与横向对比</h2>
-
   <div class="note">
-    切换下方 tab 查看每个框架的设计哲学、工作流、目录结构与关键文件。
-    然后看 <b>横向对比表</b> 和 <b>关键差异要点</b>。
+    <a href="../frameworks.html#methodology"><strong>&rarr; 查看完整方法学说明（假阳性机制、三层复测流程、verdict 类别）</strong></a>
   </div>
 
-  <div class="fw-tabs">
-    <div class="fw-tab active" data-fwt="ako4all" style="color:#10b981;border-bottom-color:#10b981">ako4all</div>
-    <div class="fw-tab" data-fwt="program_md" style="color:#6366f1">program_md</div>
-    <div class="fw-tab" data-fwt="program_kb" style="color:#f59e0b">program_kb</div>
-  </div>
-
-  <!-- ============== ako4all panel ============== -->
-  <div class="fw-panel active" data-fwt="ako4all">
-    <div class="card">
-      <h3 style="color:#10b981;margin-top:0">ako4all · AKO4ALL — Agentic Kernel Optimization for All</h3>
-      <div class="meta-line">
-        Tongming LAIC ·
-        <a href="https://tongminglaic.github.io/AKO" target="_blank">project page</a> ·
-        同团队还有 AKO4FIB (针对 flashinfer-bench operators)
-      </div>
-      <p class="lead">
-        外层 coding agent (默认 Claude Code，理论上换任意 IDE-style agent 也能用) = 研究员；
-        框架本身完全 <b>文件驱动</b>，不依赖任何特定 LLM SDK。把"什么算一次迭代、必须留什么痕迹、
-        什么是 reward hacking"全部写进 <code>TASK.md</code>/<code>HINTS.md</code>，
-        靠 LLM 读 prompt 自律。
-      </p>
-
-      <h4 style="border-color:#10b981">工作流 (5 阶段)</h4>
-      <ul class="steps">
-        <li><b>Setup</b> — 读 <code>input/</code>/<code>context/</code>/<code>bench/</code>/<code>HINTS.md</code>，
-          确认输入形状可得；create <code>opt/&lt;kernel-name&gt;</code> 分支并拷贝 kernel 到 <code>solution/</code>。</li>
-        <li><b>Profile</b> — 强制 <code>ncu</code> 对 baseline profile 一次 (不可跳过)。</li>
-        <li><b>Iterate</b> — 每次 <code>edit → bash scripts/bench.sh iter-N → 写 ITERATIONS.md → git commit "[iter N] ..."</code>
-          强制四步；任何修改 + 一次 bench = 一个 iter，不分成功/失败。</li>
-        <li><b>Adapt</b> — 命中 <code>HINTS.md</code> stall rule (连续 N 次无改进) 才允许换方向。</li>
-        <li><b>Finalize</b> — final commit + <code>ITERATIONS.md</code> 写 summary。</li>
-      </ul>
-
-      <h4 style="border-color:#10b981">目录结构 (本评测下)</h4>
-<pre class="tree">AKO4ALL/
-├── TASK.md              <span class="anno">← agent 启动 prompt (强制 iteration protocol + 反 reward hacking)</span>
-├── HINTS.md             <span class="anno">← stall rules / 调参约束</span>
-├── input/               <span class="anno">← 用户起始 kernel</span>
-├── bench/kernelbench/   <span class="anno">← 内置 KernelBench evaluator (bench.py / GUIDE.md)</span>
-├── context/             <span class="anno">← 可选参考材料</span>
-├── bench-wrapper.sh     <span class="anno">← scripts/bench.sh 模板 (tee 到 trajectory)</span>
-├── solution/            <span class="anno">← agent 创建，实际优化的 kernel</span>
-└── ITERATIONS.md        <span class="anno">★ 每次 bench 后强制留痕，真实率关键证据</span></pre>
-
-      <h4 style="border-color:#10b981">关键文件</h4>
-      <table class="keyfiles">
-        <tbody>
-          <tr><td><code>TASK.md</code> <span class="pill">36 行</span></td>
-            <td>把行为约束塞进单 prompt：iteration protocol + 禁 stream injection / monkey-patch / timing 篡改</td></tr>
-          <tr><td><code>HINTS.md</code></td>
-            <td>stall 触发条件 + 哪些 hint 可被覆盖</td></tr>
-          <tr><td><code>bench/kernelbench/bench.py</code></td>
-            <td>KernelBench 单题 bench engine，5 阶段 correctness check，atol/rtol 可配</td></tr>
-          <tr><td><code>bench-wrapper.sh</code></td>
-            <td>把 bench 输出 tee 到 <code>trajectory/iter-N/</code>，所有历史可查</td></tr>
-          <tr><td><code>ITERATIONS.md</code> <span class="pill">运行时生成</span></td>
-            <td>hypothesis-driven 留痕，是 ako4all 真实率高的关键证据来源</td></tr>
-        </tbody>
-      </table>
-
-      <details class="playbook" style="border-color:#10b981">
-        <summary>核心 playbook 解构 (TASK.md 36 行 / HINTS.md 10 行)</summary>
-        <div class="playbook-body"><ul>
-<li><strong>核心 playbook 解构 (<code>TASK.md</code> 36 行 / <code>HINTS.md</code> 10 行)</strong>:<ul>
-<li><strong>目标定义</strong>（Goal）: &quot;<em>Your goal is genuine latency reduction — not maximizing the reported speedup ratio.</em>&quot; 紧接列出 4 类禁止技巧: CUDA stream injection 绕过 timing / thread-process injection / monkey-patch timing 或 bench 脚本 / 任何 reward hacking。<strong>这一段是与其他 3 个框架的核心差异</strong>：把&quot;什么算正经优化&quot;刻在 prompt 第二段。</li>
-<li><strong>Setup 5 步</strong>: ① 读 <code>input/</code>/<code>context/</code>/<code>bench/</code>/<code>HINTS.md</code> → ② create <code>opt/&lt;kernel-name&gt;</code> 分支 → ③ 拷 kernel 进 <code>solution/</code> → ④ 生成 <code>bench.sh</code>（替换 <code>{{BENCH_COMMAND}}</code>，自动 tee 到 <code>_bench_output.txt</code>）→ ⑤ 运行 baseline 验证环境 + 首次 <code>[baseline]</code> commit。</li>
-<li><strong>Iteration Protocol（3 步原子）</strong>: 每次 <code>edit kernel.py → bash scripts/bench.sh iter-N → write ITERATIONS.md → git commit &quot;[iter N] ...&quot;</code> 必须四步全做完才能开下一轮，<strong>无论这一轮是 improved / regression / failed</strong>。任何修改 + 一次 bench = 一个 iter。</li>
-<li><strong>Optimization 期约束</strong>: ① 必须用 <code>ncu</code> profile，不能瞎改 ② 必须参考 <code>context/</code>/<code>HINTS.md</code>/历史 attempts/WebSearch ③ 必须遵守 <code>HINTS.md</code> 中的 stall rules。</li>
-<li><strong><code>HINTS.md</code> Stall Rules</strong>: ① Iter 1 之前先 <code>ncu</code> profile baseline ② <strong>连续 3 iter 无 improvement → 强制重新 <code>ncu</code> + WebSearch + 回读 <code>ITERATIONS.md</code> patterns + plan before continuing</strong>。这是 ako4all 在长 trajectory 中能从 fp16 失败回退到 TF32 / 切换策略的核心机制。</li>
-<li><strong>未在 prompt 出现的东西</strong>: dtype cast 推荐、tensor core 推荐、specific BLOCK_SIZE 建议。整套 prompt 不告诉 LLM &quot;怎么改&quot;，只告诉它&quot;必须留痕、必须 profile、必须诚实&quot;。</li>
-<li><strong>WebSearch — 允许但实测未触发</strong>: prompt 在两处显式鼓励调用 WebSearch（<code>TASK.md:25</code> 列为可用信息源、<code>HINTS.md:4</code> stall rule 建议 &quot;use WebSearch for new ideas&quot;）。本评测的外层 agent 是 Claude Code，自带 WebSearch + WebFetch 工具，技术上随时可调。<strong>但服务器上全部 100 题 <code>ITERATIONS.md</code> 全文 grep <code>websearch / arxiv / developer.nvidia / github.com / stackoverflow</code> → 0 命中</strong>；本地 3 个深度案例 (P40/P15/P14) 的 <code>kernel.py</code> 注释也无任何 URL/paper 引用。结合 ITERATIONS.md 强制写出 Hypothesis 的留痕约定（如果引了外部资料应该会留痕），可以认定<strong>ako4all 在 L1 评测中的全部优化策略都来自 LLM 权重内的领域记忆 + 当次 ncu profile + 自身 ITERATIONS.md 历史</strong>，WebSearch 始终是一个可用但未启用的备份信号。</li>
-<li><strong>为什么 WebSearch 在 L1 上没被触发</strong>: ① L1 都是教科书级 single-op (matmul / softmax / layernorm / element-wise)，LLM 权重已涵盖；② stall rule 让 LLM 在 &quot;重 ncu profile&quot; 与 &quot;WebSearch&quot; 之间选了更便宜的前者；③ Claude Code 的 WebSearch 默认有用户权限确认，长批跑容易 silent skip。这条对 L2/L3 (fusion / 全架构) 或新硬件特性 (sm_120 TMA/WGMMA) 的题目预期会不同，是 follow-up 评测的观察点。</li>
-</ul>
-</li>
-</ul>
-</div>
-      </details>
-    </div>
-  </div>
-
-  <!-- ============== program_md panel ============== -->
-  <div class="fw-panel" data-fwt="program_md">
-    <div class="card">
-      <h3 style="color:#6366f1;margin-top:0">program_md · AutoKernel — model-level autoresearch</h3>
-      <div class="meta-line">
-        RightNow-AI ·
-        <a href="https://github.com/RightNow-AI/autokernel" target="_blank">github</a> ·
-        灵感来自 Karpathy/autoresearch
-      </div>
-      <p class="lead">
-        给一个 <b>完整 PyTorch model</b>，自动 profile → extract → optimize → integrate；
-        agent 只动一个 <code>kernel.py</code>，剩下用 <code>orchestrate.py</code>
-        按 Amdahl 决定下一个该改哪个 kernel。设计为夜间无人值守跑 ~320 experiments/8h。
-      </p>
-
-      <h4 style="border-color:#6366f1">工作流 (program.md ~909 行，三阶段)</h4>
-      <ul class="steps">
-        <li><b>Phase A — Model Analysis (与人交互)</b>:
-          <code>profile.py</code> ncu profile，识别 top bottleneck，与人确认优化计划</li>
-        <li><b>Phase B — Multi-Kernel Optimization (全自治)</b>:
-          每个 bottleneck <code>extract.py</code> 切出 →
-          单 kernel 优化循环 (edit → bench → keep/revert) → 收敛后 orchestrate 下一个</li>
-        <li><b>Phase C — Integration & Verification</b>:
-          <code>verify.py</code> end-to-end 验证 + 最终 report</li>
-      </ul>
-
-      <div class="note warn" style="margin-top:14px">
-        <b>本评测下被砍掉</b>: 单 KernelBench 单题没有 model-level 概念。
-        外层 <code>run_autokernel.sh</code> 把 <code>program.md</code> 拼到 CLAUDE.md 后追加
-        <i>"profile/extract/orchestrate 不可用，只看 <code>kernel.py</code>"</i>。
-        Phase A/C 全跳过，Phase B 缩成单 kernel loop。
-      </div>
-
-      <h4 style="border-color:#6366f1">目录结构</h4>
-<pre class="tree">autokernel/
-├── program.md           <span class="anno">★ 主 prompt (~900 行三阶段 A/B/C)</span>
-├── orchestrate.py       <span class="anno">← 三阶段编排 (Amdahl 决策)</span>
-├── profile.py           <span class="anno">← model 级 ncu profile (KB 单题模式被砍)</span>
-├── extract.py           <span class="anno">← 切出 bottleneck kernel (KB 单题模式被砍)</span>
-├── bench.py             <span class="anno">★ 单 kernel bench: 5-stage correctness + roofline</span>
-├── verify.py            <span class="anno">← end-to-end 验证</span>
-├── kernel.py            <span class="anno">★ agent 实际改的文件 (KB 单题模式仅此一个)</span>
-├── reference.py         <span class="anno">← golden</span>
-├── kernels/             <span class="anno">← 已优化 kernel 仓库 (reuse)</span>
-├── models/              <span class="anno">← demo (LLaMA / GPT-2 / BERT)</span>
-└── kernelbench/         <span class="anno">← program_kb 入口 (详见下一 tab)</span></pre>
-
-      <h4 style="border-color:#6366f1">关键文件</h4>
-      <table class="keyfiles">
-        <tbody>
-          <tr><td><code>program.md</code> <span class="pill">909 行</span></td>
-            <td>三阶段大 prompt；KB 单题模式只用 Phase B + Optimization Playbook + Decision Framework 三段</td></tr>
-          <tr><td><code>orchestrate.py</code></td>
-            <td>Amdahl 决定"再优化此 kernel 边际收益 &lt; threshold 就跳到下一个"</td></tr>
-          <tr><td><code>bench.py</code></td>
-            <td>5-stage 验收 (compile / forward / backward / shapes / numerical)，默认 atol=1e-2</td></tr>
-          <tr><td><code>kernel.py</code></td>
-            <td>包含 <code>ModelNew</code> (优化目标) 和 <code>Model</code> (reference)，KB 单题模式下唯一可编辑文件</td></tr>
-        </tbody>
-      </table>
-
-      <details class="playbook" style="border-color:#6366f1">
-        <summary>核心 playbook 解构 (program.md 909 行 · 3 阶段 + 6-Tier Optimization Playbook)</summary>
-        <div class="playbook-body"><ul>
-<li><strong>核心 playbook 解构（<code>program.md</code> 909 行）</strong>:<ul>
-<li><strong>Phase A 10 步</strong>（A1-A10，KB 单题被砍）: 人交互、<code>profile.py</code> ncu profile、读 profile report、<code>extract.py</code> 切 kernel、出优化计划、人确认、create branch、读所有文件、verify env、init <code>results.tsv</code>。</li>
-<li><strong>Phase B 单 kernel 循环 8 子步（B4.1-B4.10）</strong>: ① Hypothesize → ② Edit kernel.py → ③ Commit → ④ Run → ⑤ Check Results → ⑥ Decide KEEP/REVERT → ⑦ Record with orchestrator → ⑧ Analyze roofline → ⑨ Log → ⑩ Check orchestrator。在 KB 单题模式下，⑦/⑧/⑩ 都退化（无 orchestrator）。</li>
-<li><strong>Phase C 5 步</strong>: end-to-end verify、handle 失败、diagnose、生成 final report、optional 分析。<strong>KB 单题模式跳过整 Phase C</strong>。</li>
-<li><strong>Optimization Playbook 6 Tier</strong>（共 ~130 行）:<ul>
-<li><strong>Tier 1 Block Size Tuning</strong>: BLOCK_M/N/K 扫 16/32/64/128/256；<code>num_warps</code>/<code>num_stages</code> 作次级调参。预期 10-50% 收益。</li>
-<li><strong>Tier 2 Memory</strong>: coalescing、<code>tl.prefetch</code> 软流水、L2 swizzling、shared mem bank conflict。预期 10-30%。</li>
-<li><strong>Tier 3 Compute</strong>: TF32 (<code>tl.dot(..., allow_tf32=True)</code>)、mixed precision、epilogue fusion、<code>tl.where</code> 替分支。预期 5-15%。</li>
-<li><strong>Tier 4 Advanced</strong>: Split-K、persistent kernels、<code>@triton.autotune</code>、warp specialization、register tiling。预期 5-20%。</li>
-<li><strong>Tier 5 Architecture-specific</strong>: H100/A100/L40S 各自标签，<strong>RTX 5090/Ada Lovelace 段缺失</strong> — 这是 LLM 在 5090 上瞎猜 BLOCK_SIZE 的根因之一。</li>
-<li><strong>Tier 6 Kernel tricks</strong>: matmul swizzle / softmax 在线 / LayerNorm Welford。</li>
-</ul>
-</li>
-<li><strong>Anti-Patterns (Things That Usually Do Not Work)</strong>: 12 项含 &quot;Tiny block sizes (BLOCK=8)&quot; / &quot;Excessive splits&quot; 等。<strong>不含</strong>&quot;don't fp16-cast&quot;。</li>
-<li><strong>Decision Framework</strong>: when to move on（K 个 iter 无改进或边际收益 &lt;X%）、when to revisit、when to radical change。</li>
-<li><strong>Mixed precision 的官方立场</strong>: Tier 3 明写 &quot;<em>Use <code>tl.dot(a, b, allow_tf32=True)</code> for matmul accumulation with TF32 inputs. Keep accumulators in fp32 for numerical stability. Cast results to output dtype only at the end.</em>&quot; — 这是个理论正确的描述，但 LLM 实际写出来的常常是 <code>tl.dot(a.to(bf16), b.to(bf16), acc)</code> 把操作数也降精度，accumulator 在 fp32 但运算输入已经降精度，正是 §0.3 第 1 类 truncation。</li>
-</ul>
-</li>
-</ul>
-</div>
-      </details>
-    </div>
-  </div>
-
-  <!-- ============== program_kb panel ============== -->
-  <div class="fw-panel" data-fwt="program_kb">
-    <div class="card">
-      <h3 style="color:#f59e0b;margin-top:0">program_kb · AutoKernel — KernelBench-native 变体</h3>
-      <div class="meta-line">
-        AutoKernel 仓库的 <code>autokernel/kernelbench/</code> 子模块 ·
-        prompt 入口 <code>program_kb.md</code> (388 行，远比 <code>program.md</code> 紧凑)
-      </div>
-      <p class="lead">
-        既然单 KernelBench 问题没有 model-level extract 概念，不如完全跳过 Phase A/C，
-        直接面向 KB 的单 <code>(Model, ModelNew)</code> 对做 prompt-loop。
-      </p>
-
-      <h4 style="border-color:#f59e0b">工作流 (program_kb.md 8 段)</h4>
-      <ul class="steps">
-        <li>Setup → Optimization Loop → Optimization Playbook by Problem Level →
-          CUDA C++ Tips → <b>Anti-Patterns</b> → Decision Framework → Scoring</li>
-        <li><b>Anti-Patterns 段</b>试图禁 baseline_fallback 等 cheat，但本评测仍观察到
-          P52/P39/P37 套壳 — 说明 prompt 约束在 atol=1e-2 下不够紧</li>
-      </ul>
-
-      <h4 style="border-color:#f59e0b">目录结构</h4>
-<pre class="tree">autokernel/kernelbench/
-├── program_kb.md        <span class="anno">★ 388 行 KB-native prompt</span>
-├── bench_kb.py          <span class="anno">← KernelBench 适配的单题 bench</span>
-├── bridge.py            <span class="anno">← Model / ModelNew 装载 + 等价性桥</span>
-└── scorer.py            <span class="anno">← speedup / correctness 计算</span></pre>
-
-      <h4 style="border-color:#f59e0b">关键文件</h4>
-      <table class="keyfiles">
-        <tbody>
-          <tr><td><code>program_kb.md</code> <span class="pill">388 行</span></td>
-            <td>比 <code>program.md</code> 短一半多；面向 KB 已知 atol=1e-2，
-              <b>显式鼓励</b>"fp16/bf16 cast 换 tensor core"作为常见策略 →
-              这是 <span class="badge" style="color:#ef4444">fake_precision_cheat</span>
-              集中在 program_kb 的根因之一</td></tr>
-          <tr><td><code>bench_kb.py</code></td>
-            <td>直接读 ref + solution 两个 <code>.py</code>，KernelBench 标准接口</td></tr>
-          <tr><td><code>bridge.py</code></td>
-            <td>Model 等价性检查 (forward shape 对齐)</td></tr>
-        </tbody>
-      </table>
-
-      <div class="note" style="margin-top:14px">
-        <b>与 program_md 的关系</b>: 同一 AutoKernel 框架不同 prompt 入口；
-        <code>run_autokernel.sh</code> 通过 <code>VARIANT=program_md|program_kb</code> 切换；
-        本评测两 variant 都跑了 L1 100 题以做策略对照 (更长 prompt vs 更激进 prompt)。
-      </div>
-
-      <details class="playbook" style="border-color:#f59e0b">
-        <summary>核心 playbook 解构 (program_kb.md 388 行 · 8 段 + Playbook by Problem Level)</summary>
-        <div class="playbook-body"><ul>
-<li><strong>核心 playbook 解构（<code>program_kb.md</code> 388 行 / 8 段）</strong>:<ul>
-<li><strong>Phase 1 Setup</strong>（1.1-1.4）: Fetch problems from HF / list / set up / read problem.</li>
-<li><strong>Phase 2 Optimization Loop</strong>（2.1-2.8）: Run baseline → Hypothesize → Edit kernel.py → Commit → Run → Parse results → Keep-or-revert → Repeat. 跟 program_md 的 B4 类似但更紧凑。</li>
-<li><strong>Optimization Playbook by Problem Level</strong>（不是 by tier 而是 by difficulty）:<ul>
-<li><strong>L1 Single Operations</strong>: 对 element-wise 推 grid-stride loop + <code>float4</code> vectorized；对 reduction 推 <code>__shfl_down_sync</code> + shared memory；<strong>对 matmul 直接写 &quot;Use wmma tensor cores&quot;，并指向 <code>kernels/cuda/matmul.py</code> 作为参考实现</strong> — 这一句是 program_kb 在 matmul 类问题上压倒性走 fp16/bf16 路径的根因。</li>
-<li><strong>L2 Fusion</strong>: 识别 3-6 op chain，写单 kernel 消中间 mem。</li>
-<li><strong>L3 Architecture</strong>: profile 找 hot path + 选择性优化。</li>
-<li><strong>L4 HuggingFace</strong>: <code>torch.compile</code> baseline + 选择性替换。</li>
-</ul>
-</li>
-<li><strong>CUDA C++ Tips</strong>: 用 <code>kernels.cuda._compile.compile_cuda</code>，dtype handling、多输出、参数处理。</li>
-<li><strong>Anti-Patterns（7 项）</strong>: ① 不改 reference.py ② 优先 correctness ③ 别过度优化 PyTorch 已最优 ④ 别忘 <code>torch.no_grad()</code> ⑤ 编译错误读消息 ⑥ 别假设 specific shape ⑦ 别破坏 <code>ModelNew.__init__</code> 签名。<strong>没有&quot;don't fp16-cheat&quot;或&quot;don't fallback to baseline&quot;</strong>。这是 program_kb 出现 <code>return A.half() @ B.half()</code> (P14) / <code>return torch.argmin(x, dim)</code> (P52) 等套壳的 prompt 漏洞。</li>
-<li><strong>Decision Framework</strong>: ① 何时用 CUDA/Triton/PyTorch 的对照表（matmul → &quot;wmma 或 Triton&quot;）② 何时换题: speedup &gt; 2.0× 稳定、15+ exp 无改进、操作已达硬件极限、ROI 太低。</li>
-<li><strong>Scoring</strong>: <code>fast_p</code> at 1.0/1.1/1.25/1.5/2.0/3.0/5.0×，目标 <code>fast_1 &gt; 0.80</code>。</li>
-<li><strong>缺失的强制约束</strong>: 不要求 <code>ITERATIONS.md</code> 留痕、不要求 <code>ncu</code> profile、没有 anti-reward-hacking 段。所以本评测看到 program_kb 多数题 trajectory 只有 <code>expN_&lt;note&gt;</code> 命名的目录 + 一份空 <code>output.txt</code>（只 final 那个 bench output 有内容）。</li>
-</ul>
-</li>
-</ul>
-</div>
-      </details>
-    </div>
-  </div>
-
-  <h3 style="margin-top:36px">横向对比表 (设计维度)</h3>
-
+  <h2 id="frameworks">1. 框架对比摘要</h2>
   <div class="card" style="overflow-x:auto">
     <table style="min-width:620px">
       <thead>
@@ -639,75 +305,29 @@ section.cases strong { color: #f1f5f9; }
         </tr>
       </thead>
       <tbody>
-        <tr><td>架构形态</td>
-          <td>单 agent loop</td>
-          <td>单 agent loop (被适配)</td>
-          <td>单 agent loop (KB-native)</td></tr>
-        <tr><td>目标对象</td>
-          <td>任意单 kernel</td>
-          <td>PyTorch model (砍到单题)</td>
-          <td>KernelBench 单题</td></tr>
-        <tr><td>Profile 工具</td>
-          <td><code>ncu</code> 强制</td>
-          <td><code>profile.py</code>+<code>ncu</code> (被砍)</td>
-          <td>跳过</td></tr>
-        <tr><td>Bench 入口</td>
-          <td><code>scripts/bench.sh</code></td>
-          <td><code>bench.py</code> (KB-adapted)</td>
-          <td>KB <code>bench_kb.py</code></td></tr>
-        <tr><td>迭代记录</td>
-          <td><code>ITERATIONS.md</code>+commit</td>
-          <td><code>experiments/</code> (多缺失)</td>
-          <td>同 program_md (更稀疏)</td></tr>
-        <tr><td>默认精度倾向</td>
-          <td>跟随题目 (多 fp32)</td>
-          <td><code>.to(tl.bfloat16)</code> 频繁</td>
-          <td><code>.to(half)</code>/bf16 激进</td></tr>
-        <tr><td>平均迭代数</td>
-          <td>18-25 iters</td>
-          <td>4-13 iters</td>
-          <td>4-7 iters</td></tr>
-        <tr><td>每题耗时</td>
-          <td>~8-15 min</td>
-          <td>~3-8 min</td>
-          <td>~3-6 min</td></tr>
-        <tr><td>LLM provider</td>
-          <td>Claude Code (Anthropic)</td>
-          <td>Claude / Codex / 任意</td>
-          <td>同 program_md</td></tr>
-        <tr><td>KB 适配方式</td>
-          <td>内置 evaluator</td>
-          <td>外层 wrapper 砍流程</td>
-          <td>原生 (prompt KB-aware)</td></tr>
-        <tr><td>L1 本评测样本</td>
-          <td>100 题</td>
-          <td>100 题</td>
-          <td>100 题</td></tr>
-        <tr style="background:rgba(56,189,248,0.04)"><td><b>L1 真实率</b> (fp32 strict)</td>
+        <tr><td><b>强制 ncu profile</b></td>
+          <td style="color:#10b981">✓ 不可跳过</td>
+          <td style="color:var(--muted)">有提及但非强制</td>
+          <td style="color:var(--red)">✗ 无</td></tr>
+        <tr><td><b>反 reward hacking</b></td>
+          <td style="color:#10b981">TASK.md 显式禁止</td>
+          <td style="color:var(--muted)">Anti-Patterns (无 dtype)</td>
+          <td style="color:var(--red)">无</td></tr>
+        <tr><td><b>迭代留痕</b></td>
+          <td style="color:#10b981">ITERATIONS.md 强制</td>
+          <td style="color:var(--muted)">results.tsv</td>
+          <td style="color:var(--red)">✗ 无</td></tr>
+        <tr><td><b>L1 真实率</b></td>
           <td><b style="color:#10b981">77%</b></td>
-          <td style="color:#cbd5e1">42%</td>
-          <td style="color:#cbd5e1">28%</td></tr>
+          <td>42%</td>
+          <td>28%</td></tr>
       </tbody>
     </table>
   </div>
-
-  <div class="note" style="margin-top:14px">
-    <strong>关键差异要点</strong>
-    <ol style="padding-left:20px;margin:8px 0;color:#cbd5e1;line-height:1.75">
-      <li><b>Profile-driven vs blind edit</b>: 只有 ako4all 强制 <code>ncu</code>,
-        也是唯一能稳定看到 hypothesis-driven iteration 痕迹的框架。
-        AutoKernel 两 variant 在 KB 单题模式下几乎跳过 profile。</li>
-      <li><b>dtype 默认策略决定真实率</b>:
-        AutoKernel 偏好 fp16/bf16 cast 换 tensor core,KB atol=1e-2 漏检 →
-        fp32 strict 复测多被打掉(<code>fake_precision_cheat</code> 集中)。</li>
-      <li><b>迭代深度差距</b>: ako4all 平均 18-25 iters,trajectory 里能看到
-        baseline → Triton fp16 失败 → 回退 TF32 → 局部 BLOCK 调参的收敛过程;
-        AutoKernel 单一 <code>final_*</code> kernel 缺乏 hypothesis 演化痕迹。</li>
-      <li><b>结论</b>: 在 KernelBench L1 / RTX 5090 赛道,<b style="color:#10b981">
-        ako4all 是唯一一个 fp32 strict 下仍能稳定产出真实加速的框架</b>;
-        其他两个 (AutoKernel 双 variant) 的高 claim 多半在复测时被打掉。</li>
-    </ol>
+  <div class="note">
+    <a href="../frameworks.html#frameworks"><strong>&rarr; 查看框架详细介绍（工作流、目录结构、playbook 解构、横向对比）</strong></a>
   </div>
+
 
   <h2 id="scoreboard">2. 整体战绩</h2>
   <div class="card">
@@ -762,7 +382,7 @@ section.cases strong { color: #f1f5f9; }
   <div class="row cols-2">
     <div class="card">
       <h3 style="color:#10b981">ako4all</h3>
-      <ul style="padding-left:18px;color:#cbd5e1;line-height:1.8">
+      <ul style="padding-left:18px;color:var(--dim);line-height:1.8">
         <li><b>TF32 cuBLAS toggle</b>: 30+ 题用一行 <code>allow_tf32=True</code> + save/restore 拿 1.2-1.6× 稳定加速</li>
         <li><b>手写 Triton GEMM</b>: 三角/转置 matmul 利用拓扑稀疏(P14 K-range reduction 3.92×)</li>
         <li><b>Online softmax</b>: P23 31.52× claim 是 ref baseline collapse,真实是 truncation</li>
@@ -772,7 +392,7 @@ section.cases strong { color: #f1f5f9; }
     </div>
     <div class="card">
       <h3 style="color:#6366f1">program_md</h3>
-      <ul style="padding-left:18px;color:#cbd5e1;line-height:1.8">
+      <ul style="padding-left:18px;color:var(--dim);line-height:1.8">
         <li><b>Triton + 显式 dtype cast</b>: <code>.to(tl.bfloat16)</code> 频繁,P15/P64 fp32 strict 失败</li>
         <li><b>CUDA C++ kernel</b>: P32 HardTanh 1003× 是 atol=1e-2 漏网</li>
         <li><b>Conv Triton 重写</b>: P58 6.43× claim 复测后 fake_logic_bug</li>
@@ -781,7 +401,7 @@ section.cases strong { color: #f1f5f9; }
     </div>
     <div class="card">
       <h3 style="color:#f59e0b">program_kb</h3>
-      <ul style="padding-left:18px;color:#cbd5e1;line-height:1.8">
+      <ul style="padding-left:18px;color:var(--dim);line-height:1.8">
         <li><b>fp16 cast 作弊</b>: P40 7.54× = <code>x.to(half)</code>,与 ako4all 真实 6.98× 同题对照</li>
         <li><b>baseline_fallback</b>: P52 直接 <code>return torch.argmin</code>,1.00× trivial pass</li>
         <li><b>Triton + 激进 BLOCK</b>: P8 (2.40× 真实),P14 (2.48× fake)</li>
@@ -1842,16 +1462,6 @@ ako4all P14 路径:
     </div>
   </div>
 
-  <h2>9. 方法学小贴士</h2>
-  <div class="card">
-    <ul style="color:#cbd5e1;line-height:1.8">
-      <li><b>claim_sp</b>: 框架自身 bench_results.json 里 correctness=True iter 中最大 speedup,默认 atol(多 1e-2 宽松)</li>
-      <li><b>verified_speedup</b>: <code>verify_three_tier.py</code> fp32 strict atol=1e-4 复测;fp16 OOM fallback + chunked sanity 三层</li>
-      <li><b>verdict 类别</b>: real_fp32 / real_fp16_oom_verified / fake_precision_cheat / fake_logic_bug / fake_truncation_or_precision / fake_or_broken</li>
-      <li><b>三框架未曾产出 ≥1× 的题目</b>: P5, P9, P19, P21, P22, P67, P87 (cuBLAS / element-wise 已极优,无优化空间)</li>
-    </ul>
-  </div>
-
   <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:48px;
     padding-top:24px;border-top:1px solid var(--border)">
     Generated from L1_FULL.md by build_html.py · 2026-05-10 ·
@@ -1883,33 +1493,17 @@ ako4all P14 路径:
   D.tripleWinners.forEach(r => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td><b>P${r.pid}</b></td>
-      <td style="color:#cbd5e1">${r.name}</td>
+      <td style="color:var(--dim)">${r.name}</td>
       <td>${r.ako4all.toFixed(2)}×</td>
       <td>${r.program_md.toFixed(2)}×</td>
       <td>${r.program_kb.toFixed(2)}×</td>`;
     tb.appendChild(tr);
   });
 
-  // ---- 框架 tab 切换 ----
-  document.querySelectorAll('.fw-tab').forEach(t => {
-    t.addEventListener('click', () => {
-      const fwt = t.dataset.fwt;
-      document.querySelectorAll('.fw-tab').forEach(x => {
-        x.classList.remove('active');
-        x.style.borderBottomColor = 'transparent';
-      });
-      t.classList.add('active');
-      t.style.borderBottomColor = t.style.color;
-      document.querySelectorAll('.fw-panel').forEach(p => {
-        p.classList.toggle('active', p.dataset.fwt === fwt);
-      });
-    });
-  });
-
   // ---- chart 默认配色 ----
   if (window.Chart) {
-    Chart.defaults.color = '#cbd5e1';
-    Chart.defaults.borderColor = '#1f2937';
+    Chart.defaults.color = '#4b5263';
+    Chart.defaults.borderColor = '#e2e5ea';
     Chart.defaults.font.family = '-apple-system, "PingFang SC", sans-serif';
   }
 
