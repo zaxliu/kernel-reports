@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KernelBench L1 v3 vs Baseline Delta · 8× RTX 5090</title>
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff;
+  --border: #e2e5ea; --text: #1a1d23; --dim: #4b5263; --muted: #8b92a0;
+  --accent: #2563eb; --green: #10b981; --red: #ef4444;
+  --orange: #f97316; --indigo: #6366f1; --amber: #f59e0b;
+  --rose: #f43f5e; --table-header: #f1f3f6;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --code-bg: #f4f5f7; --code-text: #1e293b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto,
+  "Helvetica Neue", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14.5px; line-height: 1.6; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; background: var(--code-bg); padding: 1px 6px;
+  border-radius: 4px; border: 1px solid var(--border); color: var(--code-text); }
+h1, h2, h3 { color: var(--text); font-weight: 600; }
+h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
+h2 { font-size: 22px; margin: 56px 0 16px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+h3 { font-size: 16px; margin: 24px 0 10px; color: var(--dim); }
+.container { max-width: 1180px; margin: 0 auto; padding: 32px 24px 96px; }
+.hero { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fefce8 100%);
+  border: 1px solid var(--border); border-radius: 14px; padding: 28px 32px;
+  margin-bottom: 32px; box-shadow: var(--shadow-sm); }
+.hero .meta { color: var(--dim); font-size: 13.5px; margin-top: 4px; }
+.hero .meta strong { color: var(--text); font-weight: 500; }
+.kpi { display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; margin-top: 24px; }
+.kpi-card { background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.kpi-card .label { color: var(--dim); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 6px; }
+.kpi-card .value { font-size: 28px; font-weight: 700; line-height: 1; }
+.kpi-card .sub { color: var(--dim); font-size: 12.5px; margin-top: 4px; }
+.kpi-card.green { border-top: 3px solid var(--green); }
+.kpi-card.indigo { border-top: 3px solid var(--indigo); }
+.kpi-card.amber { border-top: 3px solid var(--amber); }
+.kpi-card.rose { border-top: 3px solid var(--rose); }
+.row { display: grid; gap: 16px; }
+.row.cols-2 { grid-template-columns: 1fr 1fr; }
+.card { background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 22px; box-shadow: var(--shadow-sm); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table th, table td { padding: 8px 10px; border-bottom: 1px solid var(--border);
+  text-align: left; vertical-align: top; }
+table th { color: var(--dim); font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.04em; background: var(--table-header); }
+table tr:hover td { background: rgba(37, 99, 235, 0.04); }
+.dim { color: var(--dim); }
+.verdict { display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 500; line-height: 1.5;
+  border: 1px solid currentColor; opacity: 0.95; }
+.verdict.real { color: var(--green); }
+.verdict.fake { color: var(--red); }
+.verdict.muted { color: var(--muted); }
+.delta-bigup { color: var(--green); font-weight: 700; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--orange); }
+.delta-bigdown { color: var(--red); font-weight: 700; }
+.warn { background: #fef3c7; border-left: 4px solid var(--amber);
+  padding: 10px 16px; border-radius: 6px; margin: 16px 0; font-size: 13.5px; }
+.tldr { background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 22px; margin-bottom: 24px; }
+.tldr ul { margin: 6px 0 0; padding-left: 20px; }
+.tldr li { margin: 4px 0; }
+.fw-table { font-size: 13px; }
+.fw-table th:first-child, .fw-table td:first-child { width: 280px; }
+.footer { color: var(--muted); font-size: 12.5px; margin-top: 64px;
+  padding-top: 16px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 24px;font-size:13px;color:var(--muted)">
+  <a href="../index.html">&larr; 首页</a> &middot;
+  <a href="../frameworks.html">框架介绍</a> &middot;
+  <a href="../l1/">L1 老报告 (5/1 baseline)</a> &middot;
+  L1 v3 Delta
+</div>
+<div class="container">
+  <div class="hero">
+    <h1>KernelBench L1 — v3 vs Baseline Delta</h1>
+    <div class="meta">
+      <strong>Date</strong> 2026-05-27 · <strong>Hardware</strong> 8× RTX 5090
+      (sm_120, 170 SMs, 33.7 GB) · <strong>Driver</strong> 580.126.20 ·
+      <strong>PyTorch</strong> 2.11.0+cu128
+    </div>
+    <div class="kpi">
+      <div class="kpi-card green">
+        <div class="label">v3 真实通过 (verified)</div>
+        <div class="value">155/286</div>
+        <div class="sub">L1: 89 verified ako4all only</div>
+      </div>
+      <div class="kpi-card indigo">
+        <div class="label">Newly real (v3 expand)</div>
+        <div class="value">+84</div>
+        <div class="sub">L1 fake/missing → v3 real</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="label">ako4all paired Δ</div>
+        <div class="value">↑20 = 28 ↓23</div>
+        <div class="sub">net -3 (n=71)</div>
+      </div>
+      <div class="kpi-card rose">
+        <div class="label">v3 verified median</div>
+        <div class="value">1.10×</div>
+        <div class="sub">L1 (无 P32): ~2.0× / mean 40.7× ⚠️</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tldr">
+    <strong>TL;DR.</strong> v3 (post-retest17) 相对 L1 baseline 的核心收益不在"已有 problem 上更快",而在 <strong>覆盖面 +84 newly-real</strong>。
+    <ul>
+      <li><strong>+84 个 newly-real</strong>: L1 时假阳性 / 没数据的 problem,在 v3 里被 verify 出真 fp32 通过 — <code>program_md_L1_P88</code> 8.77× / <code>program_kb_L1_P100</code> 7.65× / <code>program_md_L1_P40</code> 7.78×。</li>
+      <li><strong>ako4all paired 净 -3</strong>: ↑20 / =28 / ↓23,4 个大进步 (P76 +3.98×) 4 个大退步 (P14 -2.89×, P91 -1.67×, P97 -1.56×, P18 -1.06×)。</li>
+      <li><strong>真实率提升</strong>: ako4all 76.9% → <strong>89.4%</strong> (fake_logic_bug 8→2,fake_truncation 8→5)。</li>
+      <li><strong>3 个数据警示</strong>: ① L1 verify 仅 ako4all;② <code>program_md_L1_P32</code> L1 verified 出 3458.6× 是 verifier bug;③ P35 永久 failed。</li>
+    </ul>
+  </div>
+
+  <h2>整体加速比 (verified)</h2>
+  <div class="warn">
+    用 <strong>verified speedup</strong> 而非 claim_speedup — 后者带 fp16 atol=1e-2 bias,会高估 ~10–15%。
+    L1 mean 被 <code>program_md_L1_P32 3458.6×</code> 一个 verifier bug 拉爆,实际 mean ≈ 2.0×。
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>指标</th><th>L1 verified</th><th>v3 verified</th></tr></thead>
+      <tbody>
+        <tr><td>n (real_fp32 + real_fp16_oom)</td><td>89</td><td><strong>155</strong></td></tr>
+        <tr><td>Mean</td><td>40.67× ⚠️ (P32 离群)</td><td><strong>1.79×</strong></td></tr>
+        <tr><td>Median</td><td>1.275×</td><td><strong>1.097×</strong></td></tr>
+        <tr><td>p90</td><td>3.216×</td><td>3.216×</td></tr>
+        <tr><td>Max</td><td>3458.60× ⚠️</td><td>9.55×</td></tr>
+        <tr><td>≥ 1.05×</td><td>57</td><td><strong>82</strong></td></tr>
+        <tr><td>≥ 2×</td><td>25</td><td><strong>36</strong></td></tr>
+        <tr><td>≥ 5×</td><td>5</td><td><strong>7</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>三框架真实率 (v3, n=286)</h2>
+  <div class="card">
+    <table class="fw-table">
+      <thead><tr><th>框架</th><th>real_fp32</th><th>real_fp16_oom</th><th>真实合计</th><th>fake_trunc</th><th>fake_logic</th><th>fake_cheat</th><th>broken</th></tr></thead>
+      <tbody>
+        <tr><td><code>ako4all</code></td><td>75</td><td>9</td><td><strong>84/94 (89.4%)</strong></td><td>5</td><td>2</td><td>1</td><td>2</td></tr>
+        <tr><td><code>program_md</code></td><td>28</td><td>11</td><td><strong>39/96 (40.6%)</strong></td><td>23</td><td>16</td><td>10</td><td>8</td></tr>
+        <tr><td><code>program_kb</code></td><td>24</td><td>8</td><td><strong>32/96 (33.3%)</strong></td><td>19</td><td>34</td><td>7</td><td>4</td></tr>
+      </tbody>
+    </table>
+    <p class="dim" style="margin-top:14px">L1 时仅 ako4all 跑了完整 verify (70/91 = 76.9% real);program_md/program_kb 仅 5/2 早期 46 sample (~30% real)。所以下面 paired 对比限定 ako4all。</p>
+  </div>
+
+  <h2>ako4all paired delta (n=71)</h2>
+  <div class="row cols-2">
+    <div class="card">
+      <h3>Top 进步 (Δ ≥ +0.05×, 取前 15)</h3>
+      <table>
+        <thead><tr><th>tag</th><th>problem</th><th>L1</th><th>v3</th><th>Δ</th><th>L1 verdict</th><th>v3 verdict</th></tr></thead>
+        <tbody><tr>
+        <td><code>ako4all_L1_P76</code></td>
+        <td class="dim">P76 · conv standard 1D dilated strided</td>
+        <td>1.000×</td>
+        <td>4.984×</td>
+        <td class="delta-bigup">+3.984</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P40</code></td>
+        <td class="dim">P40 · LayerNorm</td>
+        <td>6.981×</td>
+        <td>9.554×</td>
+        <td class="delta-bigup">+2.574</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P54</code></td>
+        <td class="dim">P54 · conv standard 3D  square input  square kernel</td>
+        <td>1.004×</td>
+        <td>2.589×</td>
+        <td class="delta-bigup">+1.585</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P59</code></td>
+        <td class="dim">P59 · conv standard 3D  asymmetric input  square kernel</td>
+        <td>0.993×</td>
+        <td>2.322×</td>
+        <td class="delta-bigup">+1.329</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P55</code></td>
+        <td class="dim">P55 · conv standard 2D  asymmetric input  square kernel</td>
+        <td>0.999×</td>
+        <td>1.930×</td>
+        <td class="delta-up">+0.932</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P41</code></td>
+        <td class="dim">P41 · Max Pooling 1D</td>
+        <td>1.955×</td>
+        <td>2.801×</td>
+        <td class="delta-up">+0.845</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P52</code></td>
+        <td class="dim">P52 · Argmin over a dimension</td>
+        <td>1.000×</td>
+        <td>1.823×</td>
+        <td class="delta-up">+0.823</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P2</code></td>
+        <td class="dim">P2 · Standard matrix multiplication</td>
+        <td>1.265×</td>
+        <td>1.963×</td>
+        <td class="delta-up">+0.698</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P8</code></td>
+        <td class="dim">P8 · Matmul with irregular shapes</td>
+        <td>1.831×</td>
+        <td>2.523×</td>
+        <td class="delta-up">+0.692</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P10</code></td>
+        <td class="dim">P10 · 3D tensor matrix multiplication</td>
+        <td>1.528×</td>
+        <td>2.100×</td>
+        <td class="delta-up">+0.572</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P92</code></td>
+        <td class="dim">P92 · cumsum exclusive</td>
+        <td>2.943×</td>
+        <td>3.269×</td>
+        <td class="delta-up">+0.326</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P92</code></td>
+        <td class="dim">P92 · cumsum exclusive</td>
+        <td>2.949×</td>
+        <td>3.166×</td>
+        <td class="delta-up">+0.217</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P6</code></td>
+        <td class="dim">P6 · Matmul with large K dimension</td>
+        <td>1.461×</td>
+        <td>1.568×</td>
+        <td class="delta-up">+0.107</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P7</code></td>
+        <td class="dim">P7 · Matmul with small K dimension</td>
+        <td>1.046×</td>
+        <td>1.146×</td>
+        <td class="delta-up">+0.101</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P44</code></td>
+        <td class="dim">P44 · Average Pooling 1D</td>
+        <td>1.339×</td>
+        <td>1.431×</td>
+        <td class="delta-up">+0.092</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Top 退步 (Δ ≤ -0.05×, 取前 15)</h3>
+      <table>
+        <thead><tr><th>tag</th><th>problem</th><th>L1</th><th>v3</th><th>Δ</th><th>L1 verdict</th><th>v3 verdict</th></tr></thead>
+        <tbody><tr>
+        <td><code>ako4all_L1_P14</code></td>
+        <td class="dim">P14 · Matmul for upper triangular matrices</td>
+        <td>3.917×</td>
+        <td>1.030×</td>
+        <td class="delta-bigdown">-2.887</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P91</code></td>
+        <td class="dim">P91 · cumsum reverse</td>
+        <td>2.667×</td>
+        <td>1.000×</td>
+        <td class="delta-bigdown">-1.667</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P97</code></td>
+        <td class="dim">P97 · ScaledDotProductAttention</td>
+        <td>2.598×</td>
+        <td>1.038×</td>
+        <td class="delta-bigdown">-1.561</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P18</code></td>
+        <td class="dim">P18 · Matmul with transposed both</td>
+        <td>2.060×</td>
+        <td>1.000×</td>
+        <td class="delta-bigdown">-1.060</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P17</code></td>
+        <td class="dim">P17 · Matmul with transposed B</td>
+        <td>2.420×</td>
+        <td>1.429×</td>
+        <td class="delta-down">-0.992</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P79</code></td>
+        <td class="dim">P79 · conv transposed 1D asymmetric input square kernel   padded    strided    dilated</td>
+        <td>2.355×</td>
+        <td>1.529×</td>
+        <td class="delta-down">-0.826</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P68</code></td>
+        <td class="dim">P68 · conv transposed 3D  square input  asymmetric kernel</td>
+        <td>1.621×</td>
+        <td>0.825×</td>
+        <td class="delta-down">-0.797</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P13</code></td>
+        <td class="dim">P13 · Matmul for symmetric matrices</td>
+        <td>1.454×</td>
+        <td>0.700×</td>
+        <td class="delta-down">-0.754</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P77</code></td>
+        <td class="dim">P77 · conv transposed 3D square input square kernel   padded    dilated    strided</td>
+        <td>1.752×</td>
+        <td>1.141×</td>
+        <td class="delta-down">-0.611</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P82</code></td>
+        <td class="dim">P82 · conv depthwise 2D square input square kernel</td>
+        <td>1.474×</td>
+        <td>1.000×</td>
+        <td class="delta-down">-0.474</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P1</code></td>
+        <td class="dim">P1 · Square matrix multiplication</td>
+        <td>1.454×</td>
+        <td>1.000×</td>
+        <td class="delta-down">-0.454</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P43</code></td>
+        <td class="dim">P43 · Max Pooling 3D</td>
+        <td>1.262×</td>
+        <td>1.017×</td>
+        <td class="delta-down">-0.245</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P96</code></td>
+        <td class="dim">P96 · HuberLoss</td>
+        <td>2.471×</td>
+        <td>2.231×</td>
+        <td class="delta-down">-0.240</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P24</code></td>
+        <td class="dim">P24 · LogSoftmax</td>
+        <td>1.501×</td>
+        <td>1.268×</td>
+        <td class="delta-down">-0.232</td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P81</code></td>
+        <td class="dim">P81 · conv transposed 2D asymmetric input square kernel   dilated    padded    strided</td>
+        <td>2.617×</td>
+        <td>2.387×</td>
+        <td class="delta-down">-0.230</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>Newly-real coverage gain (n=84)</h2>
+  <p class="dim">L1 时无 verify 数据 / 假阳性 → v3 验证为真。前 20 (按 v3_verified 降序)。</p>
+  <div class="card">
+    <table>
+      <thead><tr><th>tag</th><th>problem</th><th>L1</th><th>v3</th><th>Δ</th><th>L1 verdict</th><th>v3 verdict</th></tr></thead>
+      <tbody><tr>
+        <td><code>program_md_L1_P88</code></td>
+        <td class="dim">P88 · MinGPTNewGelu</td>
+        <td>—</td>
+        <td>8.774×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P40</code></td>
+        <td class="dim">P40 · LayerNorm</td>
+        <td>—</td>
+        <td>7.778×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P100</code></td>
+        <td class="dim">P100 · HingeLoss</td>
+        <td>—</td>
+        <td>7.647×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P3</code></td>
+        <td class="dim">P3 · Batched matrix multiplication</td>
+        <td>—</td>
+        <td>4.293×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P99</code></td>
+        <td class="dim">P99 · TripletMarginLoss</td>
+        <td>—</td>
+        <td>4.210×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P99</code></td>
+        <td class="dim">P99 · TripletMarginLoss</td>
+        <td>—</td>
+        <td>4.189×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P91</code></td>
+        <td class="dim">P91 · cumsum reverse</td>
+        <td>—</td>
+        <td>3.290×</td>
+        <td class="">—</td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P94</code></td>
+        <td class="dim">P94 · MSELoss</td>
+        <td>—</td>
+        <td>3.228×</td>
+        <td class="">—</td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P30</code></td>
+        <td class="dim">P30 · Softsign</td>
+        <td>—</td>
+        <td>3.197×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P41</code></td>
+        <td class="dim">P41 · Max Pooling 1D</td>
+        <td>—</td>
+        <td>2.988×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P81</code></td>
+        <td class="dim">P81 · conv transposed 2D asymmetric input square kernel   dilated    padded    strided</td>
+        <td>—</td>
+        <td>2.692×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P25</code></td>
+        <td class="dim">P25 · Swish</td>
+        <td>—</td>
+        <td>2.392×</td>
+        <td class="">—</td>
+        <td><span class="verdict fake">fake_or_broken</span></td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P85</code></td>
+        <td class="dim">P85 · conv depthwise 2D asymmetric input asymmetric kernel</td>
+        <td>—</td>
+        <td>2.367×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P85</code></td>
+        <td class="dim">P85 · conv depthwise 2D asymmetric input asymmetric kernel</td>
+        <td>—</td>
+        <td>2.237×</td>
+        <td class="">—</td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P2</code></td>
+        <td class="dim">P2 · Standard matrix multiplication</td>
+        <td>—</td>
+        <td>2.180×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P36</code></td>
+        <td class="dim">P36 · RMSNorm</td>
+        <td>—</td>
+        <td>2.096×</td>
+        <td class="">—</td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P41</code></td>
+        <td class="dim">P41 · Max Pooling 1D</td>
+        <td>—</td>
+        <td>1.961×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P66</code></td>
+        <td class="dim">P66 · conv standard 3D  asymmetric input  asymmetric kernel</td>
+        <td>—</td>
+        <td>1.851×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P64</code></td>
+        <td class="dim">P64 · conv transposed 1D</td>
+        <td>—</td>
+        <td>1.787×</td>
+        <td class="">—</td>
+        <td><span class="verdict fake">fake_precision_cheat</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P6</code></td>
+        <td class="dim">P6 · Matmul with large K dimension</td>
+        <td>—</td>
+        <td>1.689×</td>
+        <td class="">—</td>
+        <td><span class="verdict muted">—</span></td>
+        <td><span class="verdict real">real_fp32</span></td>
+    </tr></tbody>
+    </table>
+  </div>
+
+  <h2>Newly-fake (n=18)</h2>
+  <p class="dim">L1 真实但 v3 假阳性。多数集中在 program_kb/program_md。<code>P32 3458.6×</code> 是 L1 verifier bug,非 kernel 退步。</p>
+  <div class="card">
+    <table>
+      <thead><tr><th>tag</th><th>problem</th><th>L1</th><th>v3</th><th>Δ</th><th>L1 verdict</th><th>v3 verdict</th></tr></thead>
+      <tbody><tr>
+        <td><code>program_md_L1_P32</code></td>
+        <td class="dim">P32 · HardTanh</td>
+        <td>3458.599×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+        <td><span class="verdict fake">fake_or_broken</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P94</code></td>
+        <td class="dim">P94 · MSELoss</td>
+        <td>3.222×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P8</code></td>
+        <td class="dim">P8 · Matmul with irregular shapes</td>
+        <td>2.404×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_truncation_or_precision</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P59</code></td>
+        <td class="dim">P59 · conv standard 3D  asymmetric input  square kernel</td>
+        <td>2.109×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_truncation_or_precision</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P83</code></td>
+        <td class="dim">P83 · conv depthwise 2D square input asymmetric kernel</td>
+        <td>1.940×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_or_broken</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P82</code></td>
+        <td class="dim">P82 · conv depthwise 2D square input square kernel</td>
+        <td>1.483×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P84</code></td>
+        <td class="dim">P84 · conv depthwise 2D asymmetric input square kernel</td>
+        <td>1.317×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_truncation_or_precision</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P35</code></td>
+        <td class="dim">P35 · GroupNorm</td>
+        <td>1.275×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+        <td><span class="verdict muted">—</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P43</code></td>
+        <td class="dim">P43 · Max Pooling 3D</td>
+        <td>1.256×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_or_broken</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P89</code></td>
+        <td class="dim">P89 · cumsum</td>
+        <td>1.177×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_or_broken</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P39</code></td>
+        <td class="dim">P39 · L2Norm</td>
+        <td>1.160×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+        <td><span class="verdict fake">fake_or_broken</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P34</code></td>
+        <td class="dim">P34 · InstanceNorm</td>
+        <td>1.074×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P74</code></td>
+        <td class="dim">P74 · conv transposed 1D dilated</td>
+        <td>1.000×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict muted">—</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P37</code></td>
+        <td class="dim">P37 · FrobeniusNorm</td>
+        <td>1.000×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp16_oom_verified</span></td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P74</code></td>
+        <td class="dim">P74 · conv transposed 1D dilated</td>
+        <td>0.998×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_truncation_or_precision</span></td>
+    </tr>
+<tr>
+        <td><code>program_kb_L1_P73</code></td>
+        <td class="dim">P73 · conv transposed 3D asymmetric input square kernel  strided padded  grouped</td>
+        <td>0.997×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict muted">—</span></td>
+    </tr>
+<tr>
+        <td><code>ako4all_L1_P62</code></td>
+        <td class="dim">P62 · conv standard 2D  square input  asymmetric kernel</td>
+        <td>0.991×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict muted">—</span></td>
+    </tr>
+<tr>
+        <td><code>program_md_L1_P45</code></td>
+        <td class="dim">P45 · Average Pooling 2D</td>
+        <td>0.991×</td>
+        <td>—</td>
+        <td class="">—</td>
+        <td><span class="verdict real">real_fp32</span></td>
+        <td><span class="verdict fake">fake_logic_bug</span></td>
+    </tr></tbody>
+    </table>
+  </div>
+
+  <h2>Anomalies & Caveats</h2>
+  <div class="card">
+    <ul>
+      <li><strong>P32 = 3458.6×</strong>: L1 verifier 异常 (kernel ms 测得过短),非 kernel 退步;mean 应剔除该值。</li>
+      <li><strong>P35 OOM 永久 failed</strong>: 7.3 GiB output tensor + 31 GiB 5090 显存上限,结构性 OOM。</li>
+      <li><strong>L1 verify ako4all-only</strong>: 直接 paired 比较只能用 71 个 ako4all tag;program_md/kb 的"L1 vs v3"对比降级为 newly-real 框架。</li>
+      <li><strong>claim vs verified gap</strong>: v3 claim mean=9.47× / median=1.50× vs verified mean=1.79× / median=1.10×。差距来自 fp16 atol=1e-2 高估。</li>
+      <li><strong>KERNEL_SOURCE 字段覆盖</strong>: 仅 75/300 (5/26 后跑) 有该字段,225/300 老 meta 字段缺失。</li>
+    </ul>
+  </div>
+
+  <h2>本轮 fix 影响评估</h2>
+  <div class="card">
+    <ul>
+      <li>harness scheduler 3 bug fix (KERNEL_SOURCE / MAX_ATTEMPTS retire / reset_post_anomaly 复活) 救回若干 silently-failed job,但具体 delta 缺测量 hook,无法精确量化。</li>
+      <li>compute-sanitizer gate 拦 misalign — 与本报告无直接关联。</li>
+      <li>retest17 把 13 个 baseline_self (~1.0×) + 4 个 BMC-edge case 重跑,baseline_self 13→0;ako4all paired 仍是净 -3,说明 retest 的 speedup 增益 < 1×,核心价值是 <strong>消除假 done</strong> 而非涨速。</li>
+    </ul>
+  </div>
+
+  <h2>Limitations & Next</h2>
+  <div class="card">
+    <ul>
+      <li>L2/L3 还没跑 v3,本报告仅 L1。</li>
+      <li>退步 4 项 (P14/P91/P97/P18) 未根因深查 — 是 agent stochastic 还是 verifier 严格化?需对每个 problem 比对 L1 vs v3 的 kernel 代码 + reference_time_ms。</li>
+      <li>18 newly-fake 集中在 program_kb/program_md,与 fp16 atol bias 一致,这两个框架在 KernelBench L1 上仍显著靠 fp16 走捷径。</li>
+      <li>token / wall_time 维度未统计,可后续从 trajectory + claude_session.log 抓。</li>
+    </ul>
+  </div>
+
+  <h2>Related reports</h2>
+  <div class="row cols-2">
+    <a class="card" style="text-decoration:none;display:block" href="../l1/">
+      <h3 style="margin-top:0">L1 老报告 (5/1 baseline)</h3>
+      <p class="dim" style="margin:0">本报告 paired delta 的对照源。ako4all 77% / program_md 42% / program_kb 28% 真实率,verified 89 个 problem,trajectory 详图。</p>
+    </a>
+    <a class="card" style="text-decoration:none;display:block" href="../l2/">
+      <h3 style="margin-top:0">L2 评测 (融合算子)</h3>
+      <p class="dim" style="margin:0">3-6 op 融合链。ako4all 真实率 83%,program_kb 跌到 10% (ConvTranspose 复杂度)。v3 暂未跑。</p>
+    </a>
+  </div>
+
+  <div class="footer">
+    Data: <code>L1_full_report/v3_data/</code> ·
+    Sources: <code>verify_all_l1_v3.json</code> (286 verdicts, 5/27 17:21–17:41 fresh) ·
+    <code>verify_all_l1.json</code> (89 verdicts, 5/7 ako4all only) ·
+    <code>v3_l1_raw.json</code> (300 jobs aggregated) ·
+    Generated by <code>L1_full_report/build_html_v3.py</code>.
+  </div>
+</div>
+</body>
+</html>
