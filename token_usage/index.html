@@ -1,0 +1,77 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'>
+<title>Token Usage Analysis — L1/L2/v3</title>
+<style>
+body { font-family: -apple-system, sans-serif; max-width: 1200px; margin: 1em auto; padding: 0 1em; line-height: 1.5; }
+nav { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ccc; padding: 0.5em; }
+table { border-collapse: collapse; margin: 1em 0; }
+th, td { border: 1px solid #ddd; padding: 4px 8px; font-size: 14px; }
+th { background: #f4f4f4; text-align: left; }
+img { max-width: 100%; height: auto; }
+section { margin-bottom: 2em; }
+details { margin: 4px 0; }
+summary { cursor: pointer; }
+pre { background: #f9f9f9; padding: 6px; font-size: 12px; }
+input, select { padding: 4px; margin: 4px; }
+</style></head>
+<body>
+<h1>Claude Session Token Usage Analysis</h1>
+<p>ako4all + program_md + program_kb × {L1_full, L2_full, v3_regression} —
+  generated 2026-06-01T12:59:02.175847+00:00</p>
+<nav><ul><li><a href='#sec1'>1. Overview</a></li><li><a href='#sec2'>2. Token breakdown (A flow)</a></li><li><a href='#sec3'>3. LM / tool / tool_result share (B semantic)</a></li><li><a href='#sec4'>4. Token consumption rate</a></li><li><a href='#sec4_5'>4_5. Turn-level distribution</a></li><li><a href='#sec5'>5. Cross-batch comparison (regression view)</a></li><li><a href='#sec6'>6. Per-workdir details</a></li><li><a href='#sec7'>7. Methodology / data sources / errors</a></li></ul></nav>
+<section id='sec1'><h2>1. Overview</h2><table class='summary'><thead><tr><th>batch</th><th>framework</th><th>n_workdirs</th><th>total</th><th>input</th><th>output</th><th>cache_read</th><th>cache_create</th><th>mean(in+out)</th><th>median(in+out)</th></tr></thead><tbody><tr><td>L1_full</td><td>ako4all</td><td>3</td><td>34,825,575</td><td>17,775,687</td><td>137,760</td><td>16,912,128</td><td>0</td><td>5,971,149</td><td>6,255,311</td></tr><tr><td>L1_full</td><td>program_md</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>L1_full</td><td>program_kb</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>L2_full</td><td>ako4all</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>L2_full</td><td>program_md</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>L2_full</td><td>program_kb</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>v3_regression</td><td>ako4all</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>v3_regression</td><td>program_md</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>v3_regression</td><td>program_kb</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr></tbody></table></section><section id='sec2'><h2>2. Token breakdown (A flow)</h2><h3>L1_full</h3><img src='assets/section2_breakdown_L1_full.png'>
+<details><summary>top-10 expensive workdirs</summary><table><thead><tr><th>fw</th><th>pid</th><th>total</th><th>turns</th></tr></thead><tbody><tr><td>ako4all</td><td>P2</td><td>8,456,318</td><td>472</td></tr><tr><td>ako4all</td><td>P1</td><td>6,255,311</td><td>355</td></tr><tr><td>ako4all</td><td>P3</td><td>3,201,818</td><td>176</td></tr></tbody></table></details>
+<details><summary>bottom-10 expensive workdirs</summary><table><thead><tr><th>fw</th><th>pid</th><th>total</th><th>turns</th></tr></thead><tbody><tr><td>ako4all</td><td>P3</td><td>3,201,818</td><td>176</td></tr><tr><td>ako4all</td><td>P1</td><td>6,255,311</td><td>355</td></tr><tr><td>ako4all</td><td>P2</td><td>8,456,318</td><td>472</td></tr></tbody></table></details>
+<h3>L2_full</h3><img src='assets/section2_breakdown_L2_full.png'>
+<h3>v3_regression</h3><img src='assets/section2_breakdown_v3_regression.png'></section><section id='sec3'><h2>3. LM / tool / tool_result share (B semantic)</h2><h3>L1_full</h3><img src='assets/section3_share_L1_full.png'>
+<h3>L2_full</h3><img src='assets/section3_share_L2_full.png'>
+<h3>v3_regression</h3><img src='assets/section3_share_v3_regression.png'>
+<h3>Top-10 tools (across all batches)</h3><table><thead><tr><th>tool</th><th>calls</th><th>avg chars/call</th></tr></thead><tbody><tr><td>Bash</td><td>133</td><td>265</td></tr><tr><td>Read</td><td>61</td><td>89</td></tr><tr><td>Write</td><td>60</td><td>2,229</td></tr><tr><td>Edit</td><td>41</td><td>1,019</td></tr><tr><td>TodoWrite</td><td>34</td><td>582</td></tr><tr><td>Glob</td><td>7</td><td>34</td></tr><tr><td>Grep</td><td>6</td><td>172</td></tr><tr><td>TaskOutput</td><td>4</td><td>53</td></tr><tr><td>WebSearch</td><td>3</td><td>81</td></tr><tr><td>TaskStop</td><td>2</td><td>23</td></tr></tbody></table></section><section id='sec4'><h2>4. Token consumption rate</h2><img src='assets/section4_rate_scatter.png'><img src='assets/section4_rate_violin.png'></section><section id='sec4_5'><h2>4_5. Turn-level distribution</h2><h3>L1_full</h3><img src='assets/section45_cumulative_L1_full.png'>
+<h3>L2_full</h3><img src='assets/section45_cumulative_L2_full.png'>
+<h3>v3_regression</h3><img src='assets/section45_cumulative_v3_regression.png'>
+<h3>Per-turn output_tokens histogram</h3><img src='assets/section45_histogram.png'>
+<h3>Per-tool turn-level output_tokens (top-10 by count)</h3><table><thead><tr><th>tool</th><th>count</th><th>p50</th><th>p95</th><th>max</th></tr></thead><tbody><tr><td>Bash</td><td>133</td><td>118</td><td>610</td><td>2,004</td></tr><tr><td>Read</td><td>61</td><td>72</td><td>359</td><td>662</td></tr><tr><td>Write</td><td>60</td><td>1,213</td><td>1,937</td><td>2,420</td></tr><tr><td>Edit</td><td>41</td><td>306</td><td>987</td><td>2,261</td></tr><tr><td>TodoWrite</td><td>34</td><td>248</td><td>745</td><td>1,454</td></tr><tr><td>Glob</td><td>7</td><td>46</td><td>186</td><td>200</td></tr><tr><td>Grep</td><td>6</td><td>308</td><td>641</td><td>718</td></tr><tr><td>TaskOutput</td><td>4</td><td>84</td><td>110</td><td>115</td></tr><tr><td>WebSearch</td><td>3</td><td>81</td><td>105</td><td>108</td></tr><tr><td>TaskStop</td><td>2</td><td>97</td><td>99</td><td>100</td></tr></tbody></table></section><section id='sec5'><h2>5. Cross-batch comparison (regression view)</h2><img src='assets/section5_v3_delta.png'></section><section id='sec6'><h2>6. Per-workdir details</h2>
+<input id="wd-filter" placeholder="filter by problem_id or framework">
+<select id="wd-sort"><option value="total">total tokens (desc)</option>
+<option value="problem_id">problem_id</option></select>
+<div id="wd-list"></div>
+<script>
+const ROWS = [{"batch": "L1_full", "framework": "ako4all", "level": 1, "problem_id": 1, "turns": 355, "input_tokens": 6208432, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 5910272, "output_tokens": 46879, "text_chars": 63193, "tool_use_chars": 73895, "tool_result_chars_next": 135682, "tool_use_count": 124, "wall_clock_sec": 960.8140001296996, "tokens_per_sec": 6510.428656488768, "lm_text_share": 0.231671371485134, "tool_use_share": 0.2709058914103457, "tool_result_share": 0.4974227371045203, "tool_name_counts": "{'Read': 23, 'Bash': 48, 'TodoWrite': 12, 'Edit': 12, 'Write': 20, 'Grep': 6, 'WebSearch': 2, 'Glob': 1}", "total": 6255311, "sparkline": [], "workdir_slug": "L1_P1"}, {"batch": "L1_full", "framework": "ako4all", "level": 1, "problem_id": 2, "turns": 472, "input_tokens": 8394877, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 7915008, "output_tokens": 61441, "text_chars": 47535, "tool_use_chars": 122338, "tool_result_chars_next": 138132, "tool_use_count": 164, "wall_clock_sec": 3083.1019999980927, "tokens_per_sec": 2742.7954054083293, "lm_text_share": 0.154331910196263, "tool_use_share": 0.3971948507329426, "tool_result_share": 0.4484732390707943, "tool_name_counts": "{'Read': 24, 'Glob': 5, 'TodoWrite': 17, 'Bash': 66, 'Write': 24, 'Edit': 21, 'WebSearch': 1, 'TaskOutput': 4, 'TaskStop': 2}", "total": 8456318, "sparkline": [], "workdir_slug": "L1_P2"}, {"batch": "L1_full", "framework": "ako4all", "level": 1, "problem_id": 3, "turns": 176, "input_tokens": 3172378, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 3086848, "output_tokens": 29440, "text_chars": 51400, "tool_use_chars": 41701, "tool_result_chars_next": 71504, "tool_use_count": 63, "wall_clock_sec": 600.7869999408722, "tokens_per_sec": 5329.372972975637, "lm_text_share": 0.3122626894687281, "tool_use_share": 0.2533398134929072, "tool_result_share": 0.4343974970383645, "tool_name_counts": "{'Read': 14, 'Glob': 1, 'TodoWrite': 5, 'Bash': 19, 'Write': 16, 'Edit': 8}", "total": 3201818, "sparkline": [], "workdir_slug": "L1_P3"}];
+function spark(arr) {
+  if (!arr.length) return '';
+  const m = Math.max(...arr) || 1;
+  return arr.map(v => '▁▂▃▄▅▆▇█'[Math.min(7, Math.floor(8 * v / m))]).join('');
+}
+function render() {
+  const q = document.getElementById('wd-filter').value.toLowerCase();
+  const sortKey = document.getElementById('wd-sort').value;
+  const filtered = ROWS.filter(r =>
+    !q || (r.framework + 'P' + r.problem_id + ' ' + r.batch).toLowerCase().includes(q));
+  filtered.sort((a, b) => sortKey === 'total' ? b.total - a.total : a.problem_id - b.problem_id);
+  const html = filtered.map(r => '<details><summary>'
+    + r.batch + ' / ' + r.framework + ' / P' + r.problem_id + ' — '
+    + r.total.toLocaleString() + ' tok</summary><pre>'
+    + 'turns=' + r.turns + ' wall=' + Math.round(r.wall_clock_sec) + 's rate=' + Number(r.tokens_per_sec).toFixed(1) + '/s\n'
+    + 'LM=' + (100*r.lm_text_share).toFixed(1) + '% tool_use=' + (100*r.tool_use_share).toFixed(1) + '% tool_result=' + (100*r.tool_result_share).toFixed(1) + '%\n'
+    + 'sparkline: ' + spark(r.sparkline) + '</pre></details>').join('');
+  document.getElementById('wd-list').innerHTML = html;
+}
+document.getElementById('wd-filter').addEventListener('input', render);
+document.getElementById('wd-sort').addEventListener('change', render);
+render();
+</script>
+</section><section id='sec7'><h2>7. Methodology / data sources / errors</h2>
+<table>
+<tr><th>data source</th><td>experiments/L1_full_report/verify_all_l1.json,<br>
+experiments/L2_full_report/verify_all_l2.json,<br>
+experiments/L1_full_report/v3_data/verify_all_l1_v3.json</td></tr>
+<tr><th>jsonl source</th><td>gpu-server:~/.claude/projects/&lt;slug&gt;/*.jsonl</td></tr>
+<tr><th>generated at</th><td>2026-06-01T12:59:02.175826+00:00</td></tr>
+<tr><th>workdirs in manifest</th><td>3</td></tr>
+<tr><th>missing workdirs</th><td>0 (see cache/missing.csv)</td></tr>
+<tr><th>parse errors</th><td>0 lines (see cache/parse_errors.log)</td></tr>
+</table>
+<p><b>B 口径误差</b>: char-share 估算占比与 token-share 比例约 4:1 (cl100k_base sanity-check),
+   误差 ±10%。<a href='#sec3'>Section 3</a> 数字为字符占比,不直接折算成 token。</p>
+<p><b>复跑命令</b>: <code>make token-usage</code> (in experiments/analysis/token_usage/).</p>
+</section>
+</body></html>
