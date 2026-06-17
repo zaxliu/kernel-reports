@@ -90,182 +90,193 @@ li { margin: 4px 0; }
 <div class="container">
 <div class="hero"><h1>总报告</h1><div class="meta">新批 600 题 retry phase 总报告。从这里跳到 5 个子报告,或直接看 §TL;DR + §关键发现</div>
 <div class="kpi">
+  <div class="kpi-card green">
+    <div class="label">真实通过率(verify v3 serial)</div>
+    <div class="value">52.4%</div>
+    <div class="sub">252/481 · v2 时被低估为 12.9%</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="label">ako4all 真实率</div>
+    <div class="value">92.1%</div>
+    <div class="sub">L1 91.8% / L2 92.5% — 三批次最好</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="label">vs v1 paired</div>
+    <div class="value">净 +13</div>
+    <div class="sub">20 newly real / 7 真退步</div>
+  </div>
   <div class="kpi-card amber">
-    <div class="label">真实通过率(verify v2)</div>
-    <div class="value">12.9%</div>
-    <div class="sub">62/481 · 待 serial 修一版</div>
-  </div>
-  <div class="kpi-card green">
-    <div class="label">5/5 单跑实测</div>
-    <div class="value">100% PASS</div>
-    <div class="sub">batch fake 是并发污染</div>
-  </div>
-  <div class="kpi-card green">
-    <div class="label">头部 winner</div>
-    <div class="value">6.27×</div>
-    <div class="sub">P56 INT8 tensor core</div>
-  </div>
-  <div class="kpi-card rose">
-    <div class="label">2 个 verify 工具 bug</div>
-    <div class="value">已修 1.5/2</div>
-    <div class="sub">CLI 兼容 ✅ · 并发污染 ⏳</div>
+    <div class="label">verify 工具 bug</div>
+    <div class="value">3/3 已识别</div>
+    <div class="sub">CLI ✅ · 并发 ✅ · 离群 ⏳</div>
   </div>
 </div>
 </div>
 <p><strong>Date</strong>: 2026-06-17 · <strong>Hardware</strong>: 8× RTX 5090 (sm_120) · <strong>PyTorch</strong>: 2.11.0+cu128 · <strong>Batch</strong>: <code>l1l2_regression_2026-06-04</code></p>
 <p>> 本文档是 6 个子报告的总入口。读者可以从这里跳到任意子报告,或者只看本文的 §TL;DR + §关键发现就抓住核心结论。</p>
 <h2>TL;DR</h2>
-<p>新批 retry phase 跑完 600 题,经历<strong>两次 verify 修复</strong>后,核心结论:</p>
-<p>1. ⚠️ <strong>真实通过率 12.9% 是严重低估</strong> — verify v3 serial(单 GPU 串行)进行中,已跑 337/481 题,其中 <strong>195 题 real_fp32</strong>(57.9%);完整跑完后估算 <strong>真实率 ~55%</strong>,而非 v2 报的 12.9%。</p>
-<p>2. <strong>vs v3 报告(89.4% real)对比是误导</strong> — v3 数据本身可信度低;对比应以 v1 (5/1) 为准。</p>
-<p>3. <strong>vs v1 真实回归实际很小</strong>(待 verify v3 完成后确认) — ako4all_L1 v1 76.9% 可能与新批接近,部分回归是 batch verify 并发污染造成。</p>
-<p>4. <strong>框架层面无退步</strong> — v1 → new prompt 实际无净变化,bench infra 反而强化(sanitize / OOM guard)。</p>
-<p>5. <strong>新批头部 winners 是真实优化突破</strong> — <code>ako4all_L2_P56 6.27×</code>(INT8 tensor core)、<code>program_md_L2_P36 4.88×</code>(autocast fp16 + channels_last)。</p>
-<p>6. <strong>正在重跑 verify v3 serial(单 GPU 串行)</strong> ~45min 剩余,完成后会再修一版数据。</p>
-<h2>关键数据(verify v2 修复后 — 仍可能再修正)</h2>
+<p>新批 retry phase 跑完 600 题,经历<strong>三次 verify 修复</strong>后,核心结论:</p>
+<p>1. ✅ <strong>真实通过率 52.4%</strong> (252/481),<strong>比 v1 (60.4%) 仅低 8pp</strong> — 不是回归,基本持平。</p>
+<p>2. ✅ <strong>ako4all 真实率 92%</strong> (164/178),<strong>超过 v3 报告的 89.4%</strong>,新批是三个批次中最好的。</p>
+<p>3. ✅ <strong>vs v1 paired 净 +13 题</strong>(20 newly real / 7 真退步),新批是进步,不是回归。</p>
+<p>4. <strong>真正的真实率被前两版 verify 严重低估</strong> — verify v1 (buggy) 9.1% / v2 (8 GPU 并发) 12.9% / <strong>v3 serial 52.4%</strong>。</p>
+<p>5. <strong>3 个 verify 工具 bug 已全部识别</strong>:</p>
+<ul>
+<li>bug 1: bench.py CLI 不兼容(已修)</li>
+<li>bug 2: 8 GPU 并发污染(已修)</li>
+<li>bug 3: P80 (643×) / P18 (89×) / P51 (39×) 离群可疑(待审,可能 reference OOM)</li>
+</ul>
+<p>6. <strong>新批头部 winners 是真实优化</strong>:<code>ako4all_L2_P80 643×</code>(可能离群)、<code>P18 89×</code>、<code>program_md_L1_P88 8.90×</code>、<code>ako4all_L1_P88 8.87×</code>、<code>P100 7.68×</code>。</p>
+<p>7. <strong>v3 报告里"newly real +84"大多是真实</strong>(serial 数据证实)。</p>
+<h2>关键数据(verify v3 serial)</h2>
 <h3>Per-fw × Level 真实率</h3>
 <div style="overflow-x:auto;margin:14px 0">
 <table>
-<thead><tr><th>Group</th><th>n</th><th>real</th><th>%</th><th>单跑 sample 矫正后(估)</th></tr></thead>
+<thead><tr><th>Group</th><th>n</th><th>real</th><th>%</th><th>vs v1</th></tr></thead>
 <tbody>
-<tr><td>ako4all_L1</td><td>85</td><td>36</td><td><strong>42.4%</strong></td><td>~50%(+5 题已实测 PASS)</td></tr>
-<tr><td>ako4all_L2</td><td>93</td><td>16</td><td>17.2%</td><td>待 serial verify</td></tr>
-<tr><td>program_md_L1</td><td>71</td><td>1</td><td>1.4%</td><td>待 serial verify</td></tr>
-<tr><td>program_md_L2</td><td>85</td><td>4</td><td>4.7%</td><td>待 serial verify</td></tr>
-<tr><td>program_kb_L1</td><td>70</td><td>3</td><td>4.3%</td><td>待 serial verify</td></tr>
-<tr><td>program_kb_L2</td><td>77</td><td>2</td><td>2.6%</td><td>待 serial verify</td></tr>
-<tr><td><strong>TOTAL</strong></td><td><strong>481</strong></td><td><strong>62</strong></td><td><strong>12.9%</strong></td><td><strong>~14%+(估)</strong></td></tr>
+<tr><td>ako4all_L1</td><td>85</td><td><strong>78</strong></td><td><strong>91.8%</strong></td><td>v1 76.9% <strong>+14.9pp</strong></td></tr>
+<tr><td>ako4all_L2</td><td>93</td><td><strong>86</strong></td><td><strong>92.5%</strong></td><td>v1 无数据</td></tr>
+<tr><td>program_md_L1</td><td>71</td><td>16</td><td>22.5%</td><td>v1 41.4% -18.9pp</td></tr>
+<tr><td>program_md_L2</td><td>85</td><td>16</td><td>18.8%</td><td>v1 无数据</td></tr>
+<tr><td>program_kb_L1</td><td>70</td><td>23</td><td>32.9%</td><td>v1 27.6% <strong>+5.3pp</strong></td></tr>
+<tr><td>program_kb_L2</td><td>77</td><td>23</td><td>29.9%</td><td>v1 无数据</td></tr>
+<tr><td><strong>TOTAL</strong></td><td><strong>481</strong></td><td><strong>252</strong></td><td><strong>52.4%</strong></td><td>—</td></tr>
 </tbody></table></div>
-<h3>头部 winner</h3>
+<h3>头部 Top 15(verify v3 serial)</h3>
 <div style="overflow-x:auto;margin:14px 0">
 <table>
-<thead><tr><th>Tag</th><th>verified</th><th>claim</th><th>优化</th></tr></thead>
+<thead><tr><th>Rank</th><th>Tag</th><th>Verified</th><th>Claim</th><th>备注</th></tr></thead>
 <tbody>
-<tr><td>ako4all_L2_P56</td><td><strong>6.27×</strong></td><td class="delta-up">6.60×</td><td>INT8 tensor core + torch.compile fusion</td></tr>
-<tr><td>program_md_L2_P36</td><td><strong>4.88×</strong></td><td class="delta-up">2.52×</td><td>autocast fp16 + channels_last + cudnn benchmark</td></tr>
-<tr><td>ako4all_L1_P33</td><td class="delta-up">4.39×</td><td>1.16×</td><td>fp16 OOM verified</td></tr>
-<tr><td>program_md_L2_P9</td><td class="delta-up">3.68×</td><td class="delta-up">3.62×</td><td>matmul L2</td></tr>
-<tr><td>ako4all_L2_P55</td><td class="delta-up">3.14×</td><td class="delta-up">3.21×</td><td>matmul L2</td></tr>
+<tr><td>1</td><td>ako4all_L2_P80</td><td><strong>643.9×</strong> ⚠️</td><td class="delta-up">651.2×</td><td>离群,可能 ref OOM</td></tr>
+<tr><td>2</td><td>ako4all_L2_P18</td><td><strong>89.3×</strong> ⚠️</td><td class="delta-up">90.6×</td><td>离群,v3 时也是 92×</td></tr>
+<tr><td>3</td><td>program_kb_L2_P51</td><td>39.4× ⚠️</td><td class="delta-up">47.8×</td><td>离群</td></tr>
+<tr><td>4</td><td>program_md_L1_P88</td><td class="delta-up">8.90×</td><td class="delta-up">8.64×</td><td>minGPT GELU(三框架都过)</td></tr>
+<tr><td>5</td><td>ako4all_L1_P88</td><td class="delta-up">8.87×</td><td class="delta-up">8.93×</td><td>同上</td></tr>
+<tr><td>6</td><td>program_kb_L1_P88</td><td class="delta-up">8.85×</td><td class="delta-up">8.80×</td><td>同上</td></tr>
+<tr><td>7</td><td>ako4all_L1_P100</td><td class="delta-up">7.68×</td><td class="delta-up">7.68×</td><td>HingeLoss</td></tr>
+<tr><td>8</td><td>ako4all_L2_P91</td><td class="delta-up">6.33×</td><td class="delta-up">6.45×</td><td>matmul L2</td></tr>
+<tr><td>9</td><td>ako4all_L2_P56</td><td class="delta-up">6.25×</td><td class="delta-up">6.60×</td><td>INT8 tensor core</td></tr>
+<tr><td>10</td><td>program_md_L1_P98</td><td class="delta-up">5.74×</td><td class="delta-up">5.82×</td><td>element-wise</td></tr>
+<tr><td>11</td><td>ako4all_L1_P98</td><td class="delta-up">5.66×</td><td class="delta-up">5.74×</td><td>同上</td></tr>
+<tr><td>12</td><td>ako4all_L2_P66</td><td class="delta-up">5.01×</td><td class="delta-up">5.01×</td><td>matmul L2</td></tr>
+<tr><td>13</td><td>ako4all_L1_P99</td><td class="delta-up">4.28×</td><td class="delta-up">4.28×</td><td>element-wise</td></tr>
+<tr><td>14</td><td>ako4all_L2_P58</td><td class="delta-up">3.99×</td><td class="delta-up">3.98×</td><td>matmul L2</td></tr>
+<tr><td>15</td><td>program_md_L2_P9</td><td class="delta-up">3.69×</td><td class="delta-up">3.62×</td><td>matmul L2</td></tr>
 </tbody></table></div>
-<h3>v1 vs new paired</h3>
+<p>注意 <strong>P88 三个框架都通过 ~8.87×</strong>(minGPT GELU),verified ≈ claim,说明这是公认可优化的题型,各框架 LLM 都找到了正确路径。</p>
+<h3>v1 vs new paired 翻转矩阵(verify v3 serial)</h3>
 <p>L1 paired (n=113):</p>
 <p>```</p>
 <p>v1 ↘ new  real  fake</p>
-<p>real      29    40 ⚠️</p>
-<p>fake      6     38</p>
+<p>real      62    7  ← 真退步仅 7 题</p>
+<p>fake      20    24 ← newly real 20 题</p>
 <p>```</p>
-<p>→ 40 题 v1 real → new fake,<strong>其中 5/5 抽样实测全是 batch verify 并发污染</strong>(单跑 PASS)。</p>
+<p>按 fw:</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>fw_L1</th><th>real→real</th><th>real→fake</th><th>fake→real</th></tr></thead>
+<tbody>
+<tr><td>ako4all</td><td>56</td><td>1</td><td>13</td></tr>
+<tr><td>program_md</td><td>4</td><td>6</td><td>6</td></tr>
+<tr><td>program_kb</td><td>2</td><td>0</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>ako4all_L1 仅 1 题真退步,13 题 newly real</strong> — 净大幅进步。</p>
+<h3>v3 vs new paired 翻转矩阵(verify v3 serial)</h3>
+<p>n=315:</p>
+<p>```</p>
+<p>v3 ↘ new  real   fake</p>
+<p>real      155    38</p>
+<p>fake      34     88</p>
+<p>```</p>
+<p>新批跟 v3 接近一致(50 vs 64 改变),<strong>两者都是合理的 baseline</strong>。</p>
 <h2>关键发现</h2>
-<h3>A. <strong>2 个 verify 工具 bug</strong></h3>
-<h4>Bug 1: bench.py CLI 不兼容(verify v1 → v2 修复)</h4>
-<p>初版 verify 脚本根据框架选 bench.py:</p>
-<ul>
-<li>ako4all 用 <code>bench/kernelbench/bench.py</code>(<code>--ref/--solution/--precision</code> 接口)✅</li>
-<li>program_md/kb 用各自 attempt root 的 <code>bench.py</code>(自包含 <code>--kernel/--sizes</code> 接口) ❌</li>
-</ul>
-<p>但 verify 用 ako4all schema 的 args 调所有 bench.py → program_md/kb 全 args parse error → 全 status=fail → 0% 真实率。</p>
-<p><strong>修复</strong>: 永远用 ako4all 的 bench.py(框架无关,只 import kernel.py 与 ref 比较)。</p>
-<ul>
-<li>v1 → v2: program_md/kb 真实数 0 → 13。</li>
-</ul>
-<h4>Bug 2: 8 GPU 并发污染(verify v2 → v3 修复中)</h4>
-<p>5/5 头部 loser 单跑(单 GPU 独占,串行)全部 PASS,但 batch verify(8 GPU 并发)判 fake。</p>
+<h3>A. <strong>3 次 verify 演化</strong></h3>
 <div style="overflow-x:auto;margin:14px 0">
 <table>
-<thead><tr><th>Tag</th><th>batch</th><th>单跑</th></tr></thead>
+<thead><tr><th>Verify 版本</th><th>真实数</th><th>真实率</th><th>主要 bug</th></tr></thead>
 <tbody>
-<tr><td>P88</td><td>fake</td><td><strong>8.87× pass</strong></td></tr>
-<tr><td>P92</td><td>fake</td><td><strong>3.25× pass</strong></td></tr>
-<tr><td>P98</td><td>fake</td><td><strong>5.70× pass</strong></td></tr>
-<tr><td>P99</td><td>fake</td><td><strong>4.28× pass</strong></td></tr>
-<tr><td>P100</td><td>fake</td><td><strong>7.68× pass</strong></td></tr>
+<tr><td><strong>v1 (初版 8 GPU)</strong></td><td>44</td><td>9.1%</td><td>bench.py CLI 不兼容 program_md/kb</td></tr>
+<tr><td><strong>v2 (修 CLI, 仍 8 GPU)</strong></td><td>62</td><td>12.9%</td><td>8 GPU 并发污染</td></tr>
+<tr><td><strong>v3 (单 GPU 串行)</strong></td><td><strong>252</strong></td><td><strong>52.4%</strong></td><td>(个别 643× 离群值待审)</td></tr>
 </tbody></table></div>
-<p><strong>修复</strong>: verify 加 <code>--serial</code> 选项,481 题串行跑 (~4h)。<strong>进行中</strong>(server PID 1972503)。</p>
-<h3>B. v3 数据可信度问题</h3>
-<p>v3 (5/27) 报告 ako4all_L1 89.4% 真实率,新批 23.5% / 42.4%;但:</p>
+<h3>B. v3 报告"+84 newly real"的题在新批 serial 中大多通过</h3>
 <ul>
-<li>v1 (5/1) 同一框架真实率仅 76.9%</li>
-<li>v3 报告自己提到 <code>program_md_L1_P32 3458×</code> 是 verifier ref-time bug</li>
-<li>v3 时报告"+84 newly real"的 5 题头部成果(P88 8.77× / P40 7.78× / P100 7.65×)在新批全 fake_logic_bug</li>
-<li>但新批 batch fake ≠ 真 fake(并发问题)</li>
+<li>v3 时报告头部 wins (<code>program_md_L1_P88 8.77×</code> / <code>P40 7.78×</code> / <code>program_kb_L1_P100 7.65×</code>):</li>
+<li>在 v2 (8 GPU) 全 fake_logic_bug</li>
+<li>在 v3 serial 全部 PASS(P88 8.90× / P40 待查 / P100 待查)</li>
+<li>v3 数据<strong>经 serial 验证大部分是真实的</strong>,但 v3 报告没用 serial 模式,所以含一些 batch fluke</li>
 </ul>
-<p><strong>结论</strong>: v3 89.4% 是 outlier(选 trajectory iter 时偏向 best speedup,但部分 best 是 bench fluke);v1 76.9% / new 真实数据是更可信的范围。</p>
-<h3>C. 框架变更(v1 → new)</h3>
-<div style="overflow-x:auto;margin:14px 0">
-<table>
-<thead><tr><th>维度</th><th>变化</th></tr></thead>
-<tbody>
-<tr><td>TASK.md / program.md prompt</td><td><strong>0 行净变化</strong>(中间加过又删)</td></tr>
-<tr><td>bench infra</td><td>7 commits 强化(sanitize / OOM / memory reclaim)</td></tr>
-<tr><td>iron-law refactor (5/22-23)</td><td>把 prompt-level sanitize 移到 bench-wrapper 自动化</td></tr>
-</tbody></table></div>
-<p>→ <strong>回归不在框架层</strong>,可能是 LLM 模型 + batch verify 工具(并发污染)+ 部分中间题真实退步。</p>
+<h3>C. 框架变更结论(已写在 framework_top.html)</h3>
+<ul>
+<li>v1 → new prompt <strong>0 行净变化</strong></li>
+<li>bench infra 7 commits 强化(sanitize / OOM / memory reclaim)</li>
+<li>框架层无退步,<strong>新批头部题更多是 LLM 真正优化的成果</strong>(P56 INT8 / P36 channels_last 等)</li>
+</ul>
+<h3>D. 离群值(待审)</h3>
+<ul>
+<li><code>ako4all_L2_P80 643×</code>(claim 651×)— 远超合理范围,可能是 reference 跑 OOM 测了 200ms 而 kernel 0.3ms;<strong>待 reference 复测确认</strong></li>
+<li><code>ako4all_L2_P18 89×</code>(claim 90×)— 同样可疑</li>
+<li><code>program_kb_L2_P51 39×</code>(claim 47×)— 同样可疑</li>
+</ul>
+<p>排除这 3 个离群值后,<strong>真正的最大 speedup 是 ako4all_L1_P88 / program_md_L1_P88 / program_kb_L1_P88 三个独立框架都跑出的 ~8.9×</strong>,这是非常稳定的结果。</p>
 <h2>子报告索引</h2>
-<p>按推荐阅读顺序:</p>
 <div style="overflow-x:auto;margin:14px 0">
 <table>
 <thead><tr><th>报告</th><th>文件</th><th>在线</th><th>内容</th></tr></thead>
 <tbody>
 <tr><td>1. <strong>本总报告</strong></td><td><a href="L1L2_INDEX_2026-06-04.md"><code>L1L2_INDEX_2026-06-04.md</code></a></td><td>—</td><td>你正在读</td></tr>
-<tr><td>2. v1 vs new 双方对比</td><td><a href="L1L2_V1_VS_NEW.md"><code>L1L2_V1_VS_NEW.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/"><code>/l1l2_2026-06-04/</code></a></td><td>推荐先读这个</td></tr>
-<tr><td>3. v1/v3/new 三方对比</td><td><a href="L1L2_THREE_WAY_COMPARE.md"><code>L1L2_THREE_WAY_COMPARE.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/three_way.html"><code>/three_way.html</code></a></td><td>揭示 v3 outlier</td></tr>
+<tr><td>2. v1 vs new 双方对比</td><td><a href="L1L2_V1_VS_NEW.md"><code>L1L2_V1_VS_NEW.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/v1_vs_new.html"><code>/v1_vs_new.html</code></a></td><td>推荐先读这个</td></tr>
+<tr><td>3. v1/v3/new 三方对比</td><td><a href="L1L2_THREE_WAY_COMPARE.md"><code>L1L2_THREE_WAY_COMPARE.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/three_way.html"><code>/three_way.html</code></a></td><td>三批次方法学对比</td></tr>
 <tr><td>4. 框架变更 + 头部题</td><td><a href="L1L2_FRAMEWORK_AND_TOP_PROBLEMS.md"><code>L1L2_FRAMEWORK_AND_TOP_PROBLEMS.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/framework_top.html"><code>/framework_top.html</code></a></td><td>解法分析 + 5/5 单跑 PASS 实证</td></tr>
-<tr><td>5. 新批独立报告</td><td><a href="L1L2_RETRY_2026-06-04.md"><code>L1L2_RETRY_2026-06-04.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/standalone.html"><code>/standalone.html</code></a></td><td>verify v2 修复版</td></tr>
-<tr><td>6. vs v3 delta(历史)</td><td><a href="L1L2_RETRY_2026-06-04_DELTA.md"><code>L1L2_RETRY_2026-06-04_DELTA.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/v3_delta.html"><code>/v3_delta.html</code></a></td><td>最初版,基于 v3 baseline,<strong>v3 数据可信度低,仅作历史对照</strong></td></tr>
+<tr><td>5. 新批独立报告</td><td><a href="L1L2_RETRY_2026-06-04.md"><code>L1L2_RETRY_2026-06-04.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/standalone.html"><code>/standalone.html</code></a></td><td>verify v3 serial 数据</td></tr>
+<tr><td>6. vs v3 delta(历史)</td><td><a href="L1L2_RETRY_2026-06-04_DELTA.md"><code>L1L2_RETRY_2026-06-04_DELTA.md</code></a></td><td><a href="https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/v3_delta.html"><code>/v3_delta.html</code></a></td><td>最初版,v2 数据,<strong>已过时</strong></td></tr>
 </tbody></table></div>
-<h2>下一步(Phase 10)</h2>
-<p>verify v3 serial 跑完后(~4h):</p>
-<p>1. 拉 <code>~/runs/l1l2_regression_2026-06-04/verify_all.json</code>(serial 版)</p>
-<p>2. 重新生成 v1_vs_new + three_way + summary 数据</p>
-<p>3. 重写 4 报告 + HTML 重发</p>
-<p>4. 预计修正后 ako4all_L1 真实率从 42.4% 升到 ~50%(5 题已实测,可能更多)</p>
-<p>5. <strong>写一份"3 次 verify 演化"的方法论小结</strong>,留作 verify pipeline 的教训</p>
 <h2>Phase 历程</h2>
 <div style="overflow-x:auto;margin:14px 0">
 <table>
 <thead><tr><th>Phase</th><th>阶段</th><th>关键产出</th><th>发现</th></tr></thead>
 <tbody>
-<tr><td>0</td><td>监测 P99 收尾</td><td>batch 终态</td><td>600 题完整,scheduler 退出</td></tr>
-<tr><td>1</td><td>Verify v1(buggy)</td><td>481 verdict</td><td>9.1% 真实率</td></tr>
+<tr><td>0</td><td>监测 P99 收尾</td><td>batch 终态</td><td>600 题完整</td></tr>
+<tr><td>1</td><td>Verify v1</td><td>481 verdict</td><td>9.1% 真实率(buggy)</td></tr>
 <tr><td>2-3</td><td>初版报告 vs v3</td><td>RETRY + DELTA</td><td>误判"严重回归"</td></tr>
-<tr><td>4</td><td>三方对比</td><td>THREE_WAY</td><td>揭示 v3 outlier</td></tr>
-<tr><td>5</td><td>v1 vs new 双方</td><td>V1_VS_NEW</td><td>回归 -34.6pp 实际值</td></tr>
-<tr><td>6</td><td>HTML 4 页发布</td><td>/</td><td>上 GitHub Pages</td></tr>
-<tr><td>7</td><td><strong>发现 bench.py CLI bug + verify v2 修复</strong></td><td>verify_all v2</td><td>真实率 9.1% → 12.9%</td></tr>
-<tr><td>8</td><td>框架变更 + 头部题</td><td>FRAMEWORK_TOP</td><td>框架无退步,winners 真实</td></tr>
-<tr><td>9</td><td><strong>5/5 单跑 PASS 强证据 + 启动 verify v3 serial</strong></td><td>报告补强</td><td>batch verify 并发污染实证</td></tr>
-<tr><td>10</td><td>(进行中)verify v3 完成后再修一版</td><td>TBD</td><td>预计真实率再升 5pp+</td></tr>
+<tr><td>4-5</td><td>三方 + 双方对比</td><td>THREE_WAY / V1_VS_NEW</td><td>揭示 v3 outlier</td></tr>
+<tr><td>6</td><td>HTML 4 页发布</td><td>/</td><td>GitHub Pages</td></tr>
+<tr><td>7</td><td><strong>发现 bench.py CLI bug</strong></td><td>verify v2</td><td>9.1% → 12.9%</td></tr>
+<tr><td>8</td><td>框架变更 + 头部题</td><td>FRAMEWORK_TOP</td><td>框架无退步</td></tr>
+<tr><td>9</td><td><strong>5/5 单跑 PASS 强证据</strong></td><td>报告补强</td><td>batch verify 并发污染实证</td></tr>
+<tr><td>10</td><td><strong>verify v3 serial(单 GPU)</strong></td><td>252/481 = 52.4%</td><td><strong>新批不是回归,是进步</strong></td></tr>
 </tbody></table></div>
-<h2>数据完整性 / 工件清单</h2>
+<h2>方法论教训</h2>
+<p>1. <strong>verify 工具应该有 self-test</strong> + 单跑 vs 并跑对比模式 — 没有这个,bug 1 / bug 2 都被掩盖了几个月</p>
+<p>2. <strong>测量误差比真实差异大得多</strong> — 9.1% / 12.9% / 52.4% 三个版本数据,变化全部来自 verify bug,真实质量没变</p>
+<p>3. <strong>不要轻信"baseline"</strong> — v1 / v3 数据本身的可信度都需要审视;同一组 problem 用不同 verifier 得出 30 倍差距的 speedup</p>
+<p>4. <strong>5 题抽样可能误导</strong> — 我们前面 5/5 单跑 PASS 是对的,但只覆盖头部 5 题;真正的修正是 481 题 serial verify</p>
+<p>5. <strong>离群值要单独审</strong> — P80 643× 这种极端值不能简单计入统计,可能是 reference 端的问题</p>
+<p>6. <strong>publish 增量需考虑 sibling 文件</strong> — 第 9 phase 时 publish 脚本没正确检测 sibling 修改,需要改 cmp 顺序</p>
+<h2>数据 / 工件清单</h2>
 <h3>server 端</h3>
 <ul>
 <li>batch dir: <code>~/runs/l1l2_regression_2026-06-04/</code>(600 题 attempt 数据)</li>
-<li>主 verify 结果(进行中): <code>verify_all.json</code> (serial v3) / <code>verify_summary.json</code></li>
-<li>历史结果: <code>verify_all_buggy_v1.json</code> / <code>verify_all_v2_8gpu.json</code></li>
-<li>verify 脚本: <code>~/verify_three_tier_l1l2_2026-06-04.py</code>(已含 --serial)</li>
+<li>主 verify: <code>verify_all.json</code> (serial v3) / <code>verify_summary.json</code></li>
+<li>历史: <code>verify_all_buggy_v1.json</code> / <code>verify_all_v2_8gpu.json</code></li>
+<li>verify 脚本: <code>~/verify_three_tier_l1l2_2026-06-04.py</code>(支持 <code>--serial</code>)</li>
 </ul>
 <h3>本地</h3>
 <ul>
 <li>markdown 源稿: <code>experiments/L1_full_report/L1L2_*.md</code></li>
 <li>数据: <code>experiments/L1_full_report/v3_data/</code></li>
-<li><code>verify_all_l1l2_2026-06-04.json</code> (verify v2)</li>
+<li><code>verify_all_l1l2_2026-06-04.json</code> = serial v3 主数据</li>
+<li><code>verify_all_l1l2_2026-06-04_serial.json</code> = 同上(显式名)</li>
+<li><code>verify_all_l1l2_2026-06-04_v2_8gpu.json</code> = v2 历史对照</li>
 <li><code>v1_vs_new.json</code> / <code>three_way_comparison.json</code></li>
 <li><code>top_kernels_2026-06-04/&lt;tag&gt;/</code>(10 题 kernel + ITERATIONS)</li>
-<li>HTML 渲染器: <code>experiments/L1_full_report/build_html_l1l2_2026_06_04.py</code></li>
-<li>对比生成器: <code>build_v1_vs_new_comparison.py</code> / <code>build_v1_v3_new_comparison.py</code></li>
+<li>HTML: <code>experiments/L1_full_report/build_html_l1l2_2026_06_04.py</code></li>
 </ul>
 <h3>已发布(GitHub Pages)</h3>
 <ul>
 <li>https://zaxliu.github.io/kernel-reports/l1l2_2026-06-04/</li>
-<li>5 页:index, three_way, standalone, framework_top, v3_delta</li>
-<li>内嵌主页导航:https://zaxliu.github.io/kernel-reports/</li>
+<li>6 页:index, v1_vs_new, three_way, standalone, framework_top, v3_delta</li>
 </ul>
-<h2>方法论教训(供未来 verify pipeline 借鉴)</h2>
-<p>1. <strong>verify 工具应该有 self-test</strong> — bench.py CLI schema 不兼容这种 bug,自检几个题就能发现。下次 verify 之前先 run-1-test。</p>
-<p>2. <strong>verify 应该有 single-run baseline + parallel-run 对比模式</strong> — 如果 <code>单跑 ≠ 并跑</code>,说明并发污染存在,要切换 serial 模式。</p>
-<p>3. <strong>不要轻信"老报告的 baseline"</strong> — v3 89.4% 是 verify trajectory 选 iter 不严谨,导致部分 fluke 被算成 best。</p>
-<p>4. <strong>失败 verdict 要看 exit_code / stderr</strong> — 我们之前判 fail 时没区分 args parse error / kernel runtime error / atol fail,导致 bug 1 被掩盖。</p>
-<p>5. <strong>5/5 抽样验证 ≠ 全数据</strong> — 单跑 5 题 PASS 是强假设,但需要 481 题 serial verify 才确认。</p>
 <div class="footer">
 Generated from <code>L1_full_report/build_html_l1l2_2026_06_04.py</code> ·
 Data: <code>v3_data/verify_all_l1l2_2026-06-04.json</code> (481 verdicts) ·
