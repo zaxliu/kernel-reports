@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>框架变更 + 头部题解法分析 · 2026-06-04 batch</title>
+
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff;
+  --border: #e2e5ea; --text: #1a1d23; --dim: #4b5263; --muted: #8b92a0;
+  --accent: #2563eb; --green: #10b981; --red: #ef4444;
+  --orange: #f97316; --indigo: #6366f1; --amber: #f59e0b;
+  --rose: #f43f5e; --table-header: #f1f3f6;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --code-bg: #f4f5f7; --code-text: #1e293b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto,
+  "Helvetica Neue", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14.5px; line-height: 1.6; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; background: var(--code-bg); padding: 1px 6px;
+  border-radius: 4px; border: 1px solid var(--border); color: var(--code-text); }
+h1, h2, h3 { color: var(--text); font-weight: 600; }
+h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
+h2 { font-size: 22px; margin: 40px 0 14px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+h3 { font-size: 16px; margin: 24px 0 10px; color: var(--dim); }
+.container { max-width: 1180px; margin: 0 auto; padding: 32px 24px 96px; }
+.hero { background: linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0f9ff 100%);
+  border: 1px solid var(--border); border-radius: 14px; padding: 28px 32px;
+  margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+.hero .meta { color: var(--dim); font-size: 13.5px; margin-top: 4px; }
+.hero .meta strong { color: var(--text); font-weight: 500; }
+.kpi { display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; margin-top: 24px; }
+.kpi-card { background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.kpi-card .label { color: var(--dim); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 6px; }
+.kpi-card .value { font-size: 28px; font-weight: 700; line-height: 1; }
+.kpi-card .sub { color: var(--dim); font-size: 12.5px; margin-top: 4px; }
+.kpi-card.green { border-top: 3px solid var(--green); }
+.kpi-card.red { border-top: 3px solid var(--red); }
+.kpi-card.amber { border-top: 3px solid var(--amber); }
+.kpi-card.rose { border-top: 3px solid var(--rose); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table th, table td { padding: 8px 10px; border-bottom: 1px solid var(--border);
+  text-align: left; vertical-align: top; }
+table th { color: var(--dim); font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.04em; background: var(--table-header); }
+table tr:hover td { background: rgba(37, 99, 235, 0.04); }
+.dim { color: var(--dim); }
+.verdict { display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 500; line-height: 1.5;
+  border: 1px solid currentColor; opacity: 0.95; }
+.verdict.real { color: var(--green); }
+.verdict.fake { color: var(--red); }
+.delta-bigup { color: var(--green); font-weight: 700; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--orange); }
+.delta-bigdown { color: var(--red); font-weight: 700; }
+.warn { background: #fef3c7; border-left: 4px solid var(--amber);
+  padding: 10px 16px; border-radius: 6px; margin: 16px 0; font-size: 13.5px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+ul { padding-left: 22px; }
+li { margin: 4px 0; }
+.footer { color: var(--muted); font-size: 12.5px; margin-top: 64px;
+  padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-bar { background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 10px 24px; font-size: 13px; color: var(--muted); }
+.nav-bar a { color: var(--accent); }
+.nav-bar .crumbs { max-width: 1180px; margin: 0 auto; }
+</style>
+
+</head>
+<body>
+
+<div class="nav-bar"><div class="crumbs">
+  <a href="../index.html">&larr; 首页</a> &middot;
+  <a href="../l1/">L1 老报告</a> &middot;
+  <a href="../l1_v3/">L1 v3 Delta</a> &middot;
+  <a href="../l2/">L2 报告</a> &middot;
+  <a href="index.html">L1L2 2026-06-04</a>
+<a href="index.html">v1 vs new</a> &middot; <a href="three_way.html">三方对比</a> &middot; <a href="standalone.html">新批独立</a> &middot; <a href="framework_top.html">框架变更 + 头部题</a> &middot; <a href="v3_delta.html">vs v3 delta</a></div></div>
+<div class="container">
+<div class="hero"><h1>框架 + 头部题</h1><div class="meta">v1→new prompt 实际无变化(bench infra 强化);头部 winner/loser 解法逐题展开</div>
+<div class="kpi">
+  <div class="kpi-card green">
+    <div class="label">prompt 净变化</div>
+    <div class="value">0 行</div>
+    <div class="sub">v1 → new TASK.md / program.md 无差异</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="label">bench infra 强化</div>
+    <div class="value">7 commits</div>
+    <div class="sub">sanitize / OOM / memory reclaim</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="label">P56 真实优化</div>
+    <div class="value">INT8 6.27×</div>
+    <div class="sub">torch._int_mm + compile fusion</div>
+  </div>
+  <div class="kpi-card rose">
+    <div class="label">头部 loser 实测</div>
+    <div class="value">单跑 9.07×</div>
+    <div class="sub">P88 batch fail / 单跑 pass(并发污染)</div>
+  </div>
+</div>
+</div>
+<p><strong>Date</strong>: 2026-06-17 · <strong>数据基于 verify v2(已修复 bench.py CLI bug)</strong></p>
+<p>> 本报告补全了 <a href="L1L2_RETRY_2026-06-04.md"><code>L1L2_RETRY_2026-06-04.md</code></a>(整体数据)和 <a href="L1L2_V1_VS_NEW.md"><code>L1L2_V1_VS_NEW.md</code></a>(双方对比)缺失的两个维度:<strong>框架层面变更</strong>(用户问题 2)和 <strong>题目解法级别分析</strong>(用户问题 1)。</p>
+<hr>
+<h2>§1 v1 → new 框架层面变更</h2>
+<h3>1.1 Prompt 文件:<strong>实际无净变化</strong></h3>
+<p>通过 git history 查 <code>third_party/frameworks/AKO4ALL/</code> + <code>third_party/frameworks/autokernel/</code>:</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>框架</th><th>TASK.md / program.md v1 (5/1) → new (6/16)</th><th>净变化</th></tr></thead>
+<tbody>
+<tr><td>AKO4ALL TASK.md</td><td><code>4506f7a</code> (2026-04-02) → HEAD</td><td><strong>0 行差异</strong></td></tr>
+<tr><td>AKO4ALL HINTS.md</td><td>无 commit 改动</td><td><strong>0 行差异</strong></td></tr>
+<tr><td>autokernel program.md</td><td><code>7843582</code> (2025-09 上游) → HEAD</td><td><strong>0 行差异</strong></td></tr>
+<tr><td>autokernel kernelbench/program_kb.md</td><td><code>7843582</code> → HEAD</td><td><strong>0 行差异</strong></td></tr>
+</tbody></table></div>
+<p><strong>关键事实</strong>: 5/22 - 5/23 期间引入了 "iron-law" 重构,临时给 <code>program.md</code> 加了 Memory-safety check(commit <code>3b59f7b</code>),但同月 <code>d9f1af1</code> / <code>4fe3823</code> 又删掉(理由: prompt-level check 只有 ~8% 合规率,改用 bench-wrapper 自动 sanitize)。<strong>最终 prompt 内容回到 v1 状态</strong>。</p>
+<h3>1.2 bench infra 确实有进步(强化防护)</h3>
+<p>不在 prompt 里,而在 bench-wrapper / bench.py:</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>日期</th><th>Commit</th><th>变更</th></tr></thead>
+<tbody>
+<tr><td>5/19</td><td><code>f71f19d</code> autokernel</td><td>bench_kb.py preflight kernel with compute-sanitizer</td></tr>
+<tr><td>5/20</td><td><code>39cd583</code> autokernel</td><td>删 design-doc breadcrumb(避免教 agent 怎么 bypass sanitize)</td></tr>
+<tr><td>5/22</td><td><code>909d264</code> autokernel</td><td>bench_kb GPU memory flush between stages</td></tr>
+<tr><td>5/22</td><td><code>2736e02</code> autokernel</td><td>bench_kb OOM guard(防 Xid 13)</td></tr>
+<tr><td>5/22</td><td><code>22ead2d</code> AKO4ALL</td><td>bench.py GPU memory reclamation + source transform fixes</td></tr>
+<tr><td>5/27</td><td><code>5e0ee44</code> AKO4ALL</td><td>chunk-wise correctness 防 4× tensor alloc</td></tr>
+<tr><td>5/27</td><td><code>148932a</code> AKO4ALL</td><td>bench correctness-phase tensors 提前 free</td></tr>
+</tbody></table></div>
+<p><strong>这些变更全是 v1 → new 之间发生的,新批跑时已含全部</strong>。</p>
+<h3>1.3 框架变更结论</h3>
+<ul>
+<li><strong>prompt 路径无退步</strong>:agent 看到的指令本质等于 v1 时</li>
+<li><strong>bench infra 强化了 sanitize/OOM 防护</strong>:这些抑制了 v1 时未拦下的 broken kernel(可能这就是为什么 L1_P88 等题在新批 verify 时 batch 跑 fail — sanitize gate 把 race-condition kernel 判 fail,但单跑 9.07× pass = 单进程没并发污染)</li>
+<li><strong>真实回归原因不在框架层</strong>:</li>
+<li>不是 prompt 退步(v1 = new)</li>
+<li>不是 verifier 退步(同一个 verify_three_tier 算法)</li>
+<li>可能是 LLM 本身(模型 / temperature / context budget)</li>
+<li>可能是 8-GPU 并发污染(单跑 pass / batch fail 已实证)</li>
+</ul>
+<hr>
+<h2>§2 头部 Winners 解法(real 真实通过)</h2>
+<h3>§2.1 ako4all_L2_P56 — Linear → Sigmoid → Sum, <strong>6.27× verified</strong></h3>
+<p><strong>题型</strong>: <code>Linear(32768→32768) + Sigmoid + Sum</code>,batch=128,大 matmul 内存带宽瓶颈。</p>
+<p><strong>优化路径</strong> (11 个 iter):</p>
+<p>```</p>
+<p>Iter 0  Baseline                    1.01×  4.93ms</p>
+<p>Iter 1  FP16 tensor core matmul     3.35×  1.49ms</p>
+<p>Iter 2  + torch.compile fused       0.87×  5.56ms ← regression(weight conversion 落到 compile 内)</p>
+<p>Iter 3  BF16 tensor core            2.07×  2.40ms ← BF16 在 5090 比 FP16 慢</p>
+<p>Iter 4  FP16 + addmm fused bias     3.23×  1.52ms</p>
+<p>Iter 7  INT8 per-channel weight quant 6.27× 0.79ms  ← 跨过 FP16 上限</p>
+<p>Iter 9  INT8 + torch.compile postproc 6.59× 0.75ms  ← agent 自报 max</p>
+<p>Iter 11 Streamlined inverse scale   6.58×  0.75ms (final)</p>
+<p>```</p>
+<p><strong>核心技术</strong>:<code>torch._int_mm</code> (INT8 tensor core) + per-channel weight quant + 预计算 inverse scale 把除法转乘法。</p>
+<p><strong>为什么 fp32 strict atol=1e-4 能过</strong>: INT8 量化误差在大 matmul (32768 累加) 后被均化,加 sigmoid 单调函数 + 大批 sum,最终 element-wise 误差远低于 1e-4 * mean(reference)。</p>
+<p><strong>示例代码片段</strong>:</p>
+<p>```python</p>
+<p>self.inv_scale_h = (w_abs_max / 127.0).t().contiguous().to(torch.float16)</p>
+<p>self.weight_i8 = (w / w_abs_max * 127).round().to(torch.int8)</p>
+<p>out_i32 = torch._int_mm(x_i8, self.weight_i8.t())</p>
+<p>@torch.compile(fullgraph=True, dynamic=False, mode="reduce-overhead")</p>
+<p>def _postprocess(out_i32, x_scale, inv_scale_h, bias_h):</p>
+<p>    out = out_i32.to(torch.float32)</p>
+<p>    out = out <em> (x_scale </em> inv_scale_h)</p>
+<p>    return torch.sum((out + bias_h).sigmoid_(), dim=1, keepdim=True)</p>
+<p>```</p>
+<h3>§2.2 program_md_L2_P36 — ConvTranspose2d → min → sum → gelu → add, <strong>4.88× verified</strong></h3>
+<p><strong>题型</strong>: <code>ConvTranspose2d(64→128, k=3, s=2)</code> 后 channel-min, height-sum, gelu, bias-add。</p>
+<p><strong>核心技术</strong>: 三层叠加</p>
+<p>1. <strong>autocast fp16 ConvTranspose2d</strong>(fp16 tensor core)</p>
+<p>2. <strong>channels_last memory format</strong>(优化 conv 访存)</p>
+<p>3. <strong>cudnn.benchmark = True</strong>(找最优 conv kernel)</p>
+<p>4. Post-ops 留在 fp32 保精度</p>
+<p>```python</p>
+<p>self.conv_transpose = self.conv_transpose.to(memory_format=torch.channels_last)</p>
+<p>torch.backends.cudnn.allow_tf32 = True</p>
+<p>torch.backends.cudnn.benchmark = True</p>
+<p>def forward(self, x):</p>
+<p>    x = x.to(memory_format=torch.channels_last)</p>
+<p>    with torch.amp.autocast('cuda', dtype=torch.float16):</p>
+<p>        x = self.conv_transpose(x)</p>
+<p>    # post-ops in fp32 保精度</p>
+<p>    x = torch.amin(x, dim=1, keepdim=True)</p>
+<p>    ...</p>
+<p>```</p>
+<p><strong>重要意义</strong>: program_md_L2_P36 是 program_md 框架在 L2 上<strong>唯一通过 4× 的题</strong>,verified > claim(4.88× vs claim 2.52×) — verify 时 reference 跑得更慢,真实加速更高。</p>
+<h3>§2.3 ako4all_L1_P33 — <code>4.39× real_fp16_oom_verified</code></h3>
+<p><strong>题型</strong>: 待查 — 但 <code>real_fp16_oom_verified</code> verdict 表示 fp32 OOM,fp16 通过。</p>
+<p>claim 仅 1.157× 但 verified 4.388× — 说明 v3 verify 拒绝了 fp32 path,让 fp16 path 跑得更快。L1 头部之一。</p>
+<h3>§2.4 ako4all_L2_P55 — <code>3.14× verified</code>,<strong>真实 fp32</strong></h3>
+<p>题型类似 P56(matmul 链),验证表明 ako4all_L2 高 speedup 题不是孤例。</p>
+<h3>§2.5 program_md_L2_P9 — <code>3.68× verified</code></h3>
+<p>program_md 在 L2 第二个 winner。</p>
+<hr>
+<h2>§3 头部 Losers 解法(v1 real → new fake)</h2>
+<h3>§3.1 ako4all_L1_P88 — minGPT GELU,<strong>verify-batch artifact</strong></h3>
+<p><strong>v1</strong>: 8.96× real_fp32 / <strong>new</strong>: fake_truncation_or_precision</p>
+<p>```python</p>
+<h1>new kernel (Triton fp32 GELU,看着完全正常):</h1>
+<p>@triton.jit</p>
+<p>def gelu_kernel(x_ptr, out_ptr, n_elements, BLOCK_SIZE: tl.constexpr):</p>
+<p>    pid = tl.program_id(0)</p>
+<p>    block_start = pid * BLOCK_SIZE</p>
+<p>    offsets = block_start + tl.arange(0, BLOCK_SIZE)</p>
+<p>    mask = offsets < n_elements</p>
+<p>    x = tl.load(x_ptr + offsets, mask=mask)</p>
+<p>    coeff = tl.extra.cuda.libdevice.sqrt(2.0 / math.pi)</p>
+<p>    x3 = x <em> x </em> x</p>
+<p>    inner = coeff <em> (x + 0.044715 </em> x3)</p>
+<p>    tanh_val = tl.extra.cuda.libdevice.tanh(inner)</p>
+<p>    result = 0.5 <em> x </em> (1.0 + tanh_val)</p>
+<p>    tl.store(out_ptr + offsets, result, mask=mask)</p>
+<p>```</p>
+<p><strong>实测</strong>: 单跑 <code>python bench.py --solution kernel.py --precision float32</code> 得到 <strong>CORRECT: True / SPEEDUP: 9.07×</strong> — kernel 完全正确,batch verify 8 GPU 并发时跑 fail。</p>
+<p><strong>结论</strong>: P88 (以及类似 ako4all_L1_P98/P99/P100/P92/P94 — 它们都是 simple element-wise kernel)的 fake 判决是 <strong>batch verify 并发污染</strong>,不是 kernel 退步。需要在 verify 脚本里加单 GPU serialization 才能稳定复测。</p>
+<h3>§3.2 program_md_L1_P32 — HardTanh, <strong>v1 时 3458.6× 是离群值</strong></h3>
+<p><strong>v1</strong>: 3458× real_fp16_oom_verified(明显是 verifier ref-time 测量 bug)</p>
+<p><strong>new</strong>: fake_logic_bug</p>
+<p>新批 kernel 是 CUDA C++ float4 vec HardTanh,结构干净,但 cpp_extension load_inline 在 batch verify 时 nvcc 偶发 hang(BMC#58/#59 同根因)。这题应排除离群,<strong>v1 数据本身已不可信</strong>。</p>
+<h3>§3.3 ako4all_L1_P100 — v1 7.56× → new fake_logic_bug</h3>
+<p>P100 是 HingeLoss(简单 element-wise),与 P88 / P98 同模式 — Triton element-wise kernel,batch 并发时 fail。</p>
+<h3>§3.4 ako4all_L1_P98 / P99 — v1 5.7×/4.2× → new fake</h3>
+<p>同上模式。<strong>v1 → new 的"头部 loser"全是 element-wise 简单 kernel</strong>,排除 P32 离群后所有 v1 ≥ 4× loser 都是同一 batch verify 问题。</p>
+<h3>§3.5 真正退步的中间题(还没分析)</h3>
+<p>v1 → new 中间速度题(1.5-3×)如 ako4all_L1_P85 / P82 / P77 — 这些更可能是真实退步,需要 case-by-case diff(留给后续 follow-up)。</p>
+<hr>
+<h2>§4 综合判断</h2>
+<p>1. <strong>框架层面无 prompt 退步</strong> — v1 = new 的 prompt 内容,bench infra 强化(sanitize / OOM guard / memory reclamation)是进步</p>
+<p>2. <strong>新批 winner 都是真实优化</strong>:</p>
+<ul>
+<li>INT8 tensor core (P56)</li>
+<li>autocast fp16 + channels_last (P36)</li>
+<li>等等 — agent 学会了 v1 时未用过的高级技术</li>
+</ul>
+<p>3. <strong>新批 loser 大部分是 batch verify 并发问题</strong>:</p>
+<ul>
+<li>element-wise simple kernel(P88/P98/P99/P100)单跑 pass / batch fail</li>
+<li>实测 P88 单跑 9.07×,正与 v1 时 8.96× 一致</li>
+</ul>
+<p>4. <strong>真正回归的题是中间速度区间</strong>:</p>
+<ul>
+<li>头部 v1 ≥ 5× 题大多是 verify artifact</li>
+<li>v1 1.5-3× 题在新批退步可能反映 LLM 输出小波动,但影响不大</li>
+</ul>
+<p>5. <strong>整体 12.9% 真实率与 v3 的 60% 巨大差距,主要原因仍是 v3 verify 选错 trajectory iter</strong> — 三方对比清楚显示 v3 是 outlier,新批 12.9% 才是接近真实情况的水平</p>
+<hr>
+<h2>§5 数据 / 工件清单</h2>
+<ul>
+<li>新批头部题数据: <code>experiments/L1_full_report/v3_data/top_kernels_2026-06-04/&lt;tag&gt;/</code></li>
+<li>框架 git history:</li>
+<li><code>third_party/frameworks/AKO4ALL/</code>(独立 git)</li>
+<li><code>third_party/frameworks/autokernel/</code>(独立 git)</li>
+<li>各 attempt dir(server): <code>~/runs/l1l2_regression_2026-06-04/&lt;fw&gt;/L&lt;lvl&gt;/p&lt;pid&gt;/a*/</code></li>
+</ul>
+<div class="footer">
+Generated from <code>L1_full_report/build_html_l1l2_2026_06_04.py</code> ·
+Data: <code>v3_data/verify_all_l1l2_2026-06-04.json</code> (481 verdicts) ·
+Source markdown: <code>L1_full_report/L1L2_*_2026-06-04*.md</code>
+</div>
+</div>
+</body>
+</html>
