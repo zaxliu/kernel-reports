@@ -116,12 +116,12 @@ li { margin: 4px 0; }
 <p>> 本文档是 6 个子报告的总入口。读者可以从这里跳到任意子报告,或者只看本文的 §TL;DR + §关键发现就抓住核心结论。</p>
 <h2>TL;DR</h2>
 <p>新批 retry phase 跑完 600 题,经历<strong>两次 verify 修复</strong>后,核心结论:</p>
-<p>1. <strong>真实通过率 12.9% 不是新批的最终答案</strong> — 至少要再修正"batch verify 8 GPU 并发污染"问题:5/5 头部 loser 单跑全部 PASS,说明<strong>真实通过率被低估了至少 5pp</strong>。</p>
+<p>1. ⚠️ <strong>真实通过率 12.9% 是严重低估</strong> — verify v3 serial(单 GPU 串行)进行中,已跑 337/481 题,其中 <strong>195 题 real_fp32</strong>(57.9%);完整跑完后估算 <strong>真实率 ~55%</strong>,而非 v2 报的 12.9%。</p>
 <p>2. <strong>vs v3 报告(89.4% real)对比是误导</strong> — v3 数据本身可信度低;对比应以 v1 (5/1) 为准。</p>
-<p>3. <strong>vs v1 真实回归确实存在但不严重</strong> — ako4all_L1 76.9% → 42.4%(-34.6pp),其中部分由 batch verify 并发污染造成。</p>
+<p>3. <strong>vs v1 真实回归实际很小</strong>(待 verify v3 完成后确认) — ako4all_L1 v1 76.9% 可能与新批接近,部分回归是 batch verify 并发污染造成。</p>
 <p>4. <strong>框架层面无退步</strong> — v1 → new prompt 实际无净变化,bench infra 反而强化(sanitize / OOM guard)。</p>
 <p>5. <strong>新批头部 winners 是真实优化突破</strong> — <code>ako4all_L2_P56 6.27×</code>(INT8 tensor core)、<code>program_md_L2_P36 4.88×</code>(autocast fp16 + channels_last)。</p>
-<p>6. <strong>正在重跑 verify v3 serial(单 GPU 串行)</strong> ~4h,完成后会再修一版数据。</p>
+<p>6. <strong>正在重跑 verify v3 serial(单 GPU 串行)</strong> ~45min 剩余,完成后会再修一版数据。</p>
 <h2>关键数据(verify v2 修复后 — 仍可能再修正)</h2>
 <h3>Per-fw × Level 真实率</h3>
 <div style="overflow-x:auto;margin:14px 0">
