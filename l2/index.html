@@ -244,6 +244,9 @@ section.cases strong { color: var(--text); }
 </div>
 <div class="container">
 
+  <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:14px 20px;margin:0 0 20px;border-radius:6px;font-size:13.5px;line-height:1.6">
+  ⚠️ <strong>2026-06-17 修订提醒</strong>: 本报告 verify verdict 数据来自<strong>多 GPU 并发</strong>跑 <code style="background:#f4f5f7;padding:1px 4px;border-radius:3px">verify_three_tier</code>。后期(参见 <a href="../l1l2_2026-06-04/" style="color:#2563eb">L1+L2 Retry 2026-06-04 总报告</a> Phase 9-10)发现并发模式产生 ~190 个 false-fail。同一组 kernel 在 8 GPU 并发下真实率 12.9% / 在单 GPU 串行下 52.4%。<strong>本报告中标 fake_logic_bug 的题需要用 <code>--serial</code> 模式复测才能确认。</strong> ako4all 真实率(77-83%)很可能被低估,实际接近 90%(已在 6/16 batch 上得到证实 91.8%)。
+</div>
   <div class="hero">
     <h1>KernelBench L2 完整评测报告</h1>
     <div class="meta">
