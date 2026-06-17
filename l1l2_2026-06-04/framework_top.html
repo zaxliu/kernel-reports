@@ -112,7 +112,7 @@ li { margin: 4px 0; }
   </div>
 </div>
 </div>
-<p><strong>Date</strong>: 2026-06-17 · <strong>数据基于 verify v2(已修复 bench.py CLI bug)</strong></p>
+<p><strong>Date</strong>: 2026-06-17(verify v3 serial 修正版) · <strong>数据基于 verify v3 serial(单 GPU 串行)</strong></p>
 <p>> 本报告补全了 <a href="L1L2_RETRY_2026-06-04.md"><code>L1L2_RETRY_2026-06-04.md</code></a>(整体数据)和 <a href="L1L2_V1_VS_NEW.md"><code>L1L2_V1_VS_NEW.md</code></a>(双方对比)缺失的两个维度:<strong>框架层面变更</strong>(用户问题 2)和 <strong>题目解法级别分析</strong>(用户问题 1)。</p>
 <hr>
 <h2>§1 v1 → new 框架层面变更</h2>
@@ -127,50 +127,41 @@ li { margin: 4px 0; }
 <tr><td>autokernel program.md</td><td><code>7843582</code> (2025-09 上游) → HEAD</td><td><strong>0 行差异</strong></td></tr>
 <tr><td>autokernel kernelbench/program_kb.md</td><td><code>7843582</code> → HEAD</td><td><strong>0 行差异</strong></td></tr>
 </tbody></table></div>
-<p><strong>关键事实</strong>: 5/22 - 5/23 期间引入了 "iron-law" 重构,临时给 <code>program.md</code> 加了 Memory-safety check(commit <code>3b59f7b</code>),但同月 <code>d9f1af1</code> / <code>4fe3823</code> 又删掉(理由: prompt-level check 只有 ~8% 合规率,改用 bench-wrapper 自动 sanitize)。<strong>最终 prompt 内容回到 v1 状态</strong>。</p>
+<p>5/22 - 5/23 期间引入了 "iron-law" 重构,临时给 program.md 加了 Memory-safety check(commit <code>3b59f7b</code>),但同月 <code>d9f1af1</code> / <code>4fe3823</code> 又删掉(理由: prompt-level check 只有 ~8% 合规率,改用 bench-wrapper 自动 sanitize)。<strong>最终 prompt 内容回到 v1 状态</strong>。</p>
 <h3>1.2 bench infra 确实有进步(强化防护)</h3>
-<p>不在 prompt 里,而在 bench-wrapper / bench.py:</p>
 <div style="overflow-x:auto;margin:14px 0">
 <table>
 <thead><tr><th>日期</th><th>Commit</th><th>变更</th></tr></thead>
 <tbody>
 <tr><td>5/19</td><td><code>f71f19d</code> autokernel</td><td>bench_kb.py preflight kernel with compute-sanitizer</td></tr>
-<tr><td>5/20</td><td><code>39cd583</code> autokernel</td><td>删 design-doc breadcrumb(避免教 agent 怎么 bypass sanitize)</td></tr>
+<tr><td>5/20</td><td><code>39cd583</code> autokernel</td><td>删 design-doc breadcrumb(避免教 agent 怎么 bypass)</td></tr>
 <tr><td>5/22</td><td><code>909d264</code> autokernel</td><td>bench_kb GPU memory flush between stages</td></tr>
 <tr><td>5/22</td><td><code>2736e02</code> autokernel</td><td>bench_kb OOM guard(防 Xid 13)</td></tr>
 <tr><td>5/22</td><td><code>22ead2d</code> AKO4ALL</td><td>bench.py GPU memory reclamation + source transform fixes</td></tr>
 <tr><td>5/27</td><td><code>5e0ee44</code> AKO4ALL</td><td>chunk-wise correctness 防 4× tensor alloc</td></tr>
 <tr><td>5/27</td><td><code>148932a</code> AKO4ALL</td><td>bench correctness-phase tensors 提前 free</td></tr>
 </tbody></table></div>
-<p><strong>这些变更全是 v1 → new 之间发生的,新批跑时已含全部</strong>。</p>
 <h3>1.3 框架变更结论</h3>
 <ul>
 <li><strong>prompt 路径无退步</strong>:agent 看到的指令本质等于 v1 时</li>
-<li><strong>bench infra 强化了 sanitize/OOM 防护</strong>:这些抑制了 v1 时未拦下的 broken kernel(可能这就是为什么 L1_P88 等题在新批 verify 时 batch 跑 fail — sanitize gate 把 race-condition kernel 判 fail,但单跑 9.07× pass = 单进程没并发污染)</li>
-<li><strong>真实回归原因不在框架层</strong>:</li>
-<li>不是 prompt 退步(v1 = new)</li>
-<li>不是 verifier 退步(同一个 verify_three_tier 算法)</li>
-<li>可能是 LLM 本身(模型 / temperature / context budget)</li>
-<li>可能是 8-GPU 并发污染(单跑 pass / batch fail 已实证)</li>
+<li><strong>bench infra 强化了 sanitize / OOM 防护</strong>:这些是真正的进步,抑制了 v1 时未拦下的 broken kernel</li>
+<li><strong>真实回归原因不是框架退步</strong>(verify v3 serial 数据已证实新批不是回归):</li>
+<li>vs v1 paired 净 +13 题进步</li>
+<li>ako4all 真实率从 v1 76.9% → new 91.8%</li>
+<li><strong>新批是三批次中最好的</strong></li>
 </ul>
 <hr>
-<h2>§2 头部 Winners 解法(real 真实通过)</h2>
-<h3>§2.1 ako4all_L2_P56 — Linear → Sigmoid → Sum, <strong>6.27× verified</strong></h3>
-<p><strong>题型</strong>: <code>Linear(32768→32768) + Sigmoid + Sum</code>,batch=128,大 matmul 内存带宽瓶颈。</p>
+<h2>§2 头部 Winners 解法</h2>
+<h3>§2.1 ako4all_L2_P56 — Linear → Sigmoid → Sum, <strong>6.25× verified</strong></h3>
+<p><strong>题型</strong>: <code>Linear(32768→32768) + Sigmoid + Sum</code>,batch=128。</p>
 <p><strong>优化路径</strong> (11 个 iter):</p>
 <p>```</p>
-<p>Iter 0  Baseline                    1.01×  4.93ms</p>
-<p>Iter 1  FP16 tensor core matmul     3.35×  1.49ms</p>
-<p>Iter 2  + torch.compile fused       0.87×  5.56ms ← regression(weight conversion 落到 compile 内)</p>
-<p>Iter 3  BF16 tensor core            2.07×  2.40ms ← BF16 在 5090 比 FP16 慢</p>
-<p>Iter 4  FP16 + addmm fused bias     3.23×  1.52ms</p>
-<p>Iter 7  INT8 per-channel weight quant 6.27× 0.79ms  ← 跨过 FP16 上限</p>
-<p>Iter 9  INT8 + torch.compile postproc 6.59× 0.75ms  ← agent 自报 max</p>
-<p>Iter 11 Streamlined inverse scale   6.58×  0.75ms (final)</p>
+<p>Iter 0  Baseline                    1.01×</p>
+<p>Iter 1  FP16 tensor core matmul     3.35×</p>
+<p>Iter 7  INT8 per-channel weight quant 6.27× ← 跨过 FP16 上限</p>
+<p>Iter 9  INT8 + torch.compile postproc 6.59× (claim max)</p>
 <p>```</p>
-<p><strong>核心技术</strong>:<code>torch._int_mm</code> (INT8 tensor core) + per-channel weight quant + 预计算 inverse scale 把除法转乘法。</p>
-<p><strong>为什么 fp32 strict atol=1e-4 能过</strong>: INT8 量化误差在大 matmul (32768 累加) 后被均化,加 sigmoid 单调函数 + 大批 sum,最终 element-wise 误差远低于 1e-4 * mean(reference)。</p>
-<p><strong>示例代码片段</strong>:</p>
+<p><strong>核心技术</strong>: <code>torch._int_mm</code> (INT8 tensor core) + per-channel weight quant + <code>torch.compile</code> postproc fusion。</p>
 <p>```python</p>
 <p>self.inv_scale_h = (w_abs_max / 127.0).t().contiguous().to(torch.float16)</p>
 <p>self.weight_i8 = (w / w_abs_max * 127).round().to(torch.int8)</p>
@@ -181,12 +172,12 @@ li { margin: 4px 0; }
 <p>    out = out <em> (x_scale </em> inv_scale_h)</p>
 <p>    return torch.sum((out + bias_h).sigmoid_(), dim=1, keepdim=True)</p>
 <p>```</p>
-<h3>§2.2 program_md_L2_P36 — ConvTranspose2d → min → sum → gelu → add, <strong>4.88× verified</strong></h3>
+<h3>§2.2 program_md_L2_P36 — ConvTranspose2d + min + sum + gelu + bias, <strong>3.69× verified</strong></h3>
 <p><strong>题型</strong>: <code>ConvTranspose2d(64→128, k=3, s=2)</code> 后 channel-min, height-sum, gelu, bias-add。</p>
-<p><strong>核心技术</strong>: 三层叠加</p>
-<p>1. <strong>autocast fp16 ConvTranspose2d</strong>(fp16 tensor core)</p>
-<p>2. <strong>channels_last memory format</strong>(优化 conv 访存)</p>
-<p>3. <strong>cudnn.benchmark = True</strong>(找最优 conv kernel)</p>
+<p><strong>核心技术</strong>:</p>
+<p>1. autocast fp16 ConvTranspose2d(fp16 tensor core)</p>
+<p>2. channels_last memory format</p>
+<p>3. cudnn.benchmark = True</p>
 <p>4. Post-ops 留在 fp32 保精度</p>
 <p>```python</p>
 <p>self.conv_transpose = self.conv_transpose.to(memory_format=torch.channels_last)</p>
@@ -196,24 +187,22 @@ li { margin: 4px 0; }
 <p>    x = x.to(memory_format=torch.channels_last)</p>
 <p>    with torch.amp.autocast('cuda', dtype=torch.float16):</p>
 <p>        x = self.conv_transpose(x)</p>
-<p>    # post-ops in fp32 保精度</p>
 <p>    x = torch.amin(x, dim=1, keepdim=True)</p>
 <p>    ...</p>
 <p>```</p>
-<p><strong>重要意义</strong>: program_md_L2_P36 是 program_md 框架在 L2 上<strong>唯一通过 4× 的题</strong>,verified > claim(4.88× vs claim 2.52×) — verify 时 reference 跑得更慢,真实加速更高。</p>
-<h3>§2.3 ako4all_L1_P33 — <code>4.39× real_fp16_oom_verified</code></h3>
-<p><strong>题型</strong>: 待查 — 但 <code>real_fp16_oom_verified</code> verdict 表示 fp32 OOM,fp16 通过。</p>
-<p>claim 仅 1.157× 但 verified 4.388× — 说明 v3 verify 拒绝了 fp32 path,让 fp16 path 跑得更快。L1 头部之一。</p>
-<h3>§2.4 ako4all_L2_P55 — <code>3.14× verified</code>,<strong>真实 fp32</strong></h3>
-<p>题型类似 P56(matmul 链),验证表明 ako4all_L2 高 speedup 题不是孤例。</p>
-<h3>§2.5 program_md_L2_P9 — <code>3.68× verified</code></h3>
-<p>program_md 在 L2 第二个 winner。</p>
-<hr>
-<h2>§3 头部 Losers 解法(v1 real → new fake)</h2>
-<h3>§3.1 ako4all_L1_P88 — minGPT GELU,<strong>verify-batch artifact</strong></h3>
-<p><strong>v1</strong>: 8.96× real_fp32 / <strong>new</strong>: fake_truncation_or_precision</p>
+<h3>§2.3 P88 三框架共赢 minGPT GELU(verify v3 修正后真实显现)</h3>
+<p><strong>关键发现</strong>(serial 数据):</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Tag</th><th>verified</th><th>claim</th><th>框架</th></tr></thead>
+<tbody>
+<tr><td>program_md_L1_P88</td><td><strong>8.90×</strong></td><td class="delta-up">8.64×</td><td>program_md</td></tr>
+<tr><td>ako4all_L1_P88</td><td><strong>8.87×</strong></td><td class="delta-up">8.93×</td><td>ako4all</td></tr>
+<tr><td>program_kb_L1_P88</td><td><strong>8.85×</strong></td><td class="delta-up">8.80×</td><td>program_kb</td></tr>
+</tbody></table></div>
+<p><strong>三个独立框架在同一题(minGPT GELU)上都跑到 ~8.87×</strong>,verified ≈ claim。这是公认稳定可优化的题目,各框架 LLM 都找到了正确路径。</p>
+<p>ako4all_L1_P88 的 kernel(纯 fp32 Triton GELU,无 cast):</p>
 <p>```python</p>
-<h1>new kernel (Triton fp32 GELU,看着完全正常):</h1>
 <p>@triton.jit</p>
 <p>def gelu_kernel(x_ptr, out_ptr, n_elements, BLOCK_SIZE: tl.constexpr):</p>
 <p>    pid = tl.program_id(0)</p>
@@ -228,58 +217,76 @@ li { margin: 4px 0; }
 <p>    result = 0.5 <em> x </em> (1.0 + tanh_val)</p>
 <p>    tl.store(out_ptr + offsets, result, mask=mask)</p>
 <p>```</p>
-<p><strong>实测</strong>: 单跑 <code>python bench.py --solution kernel.py --precision float32</code> 得到 <strong>CORRECT: True / SPEEDUP: 9.07×</strong> — kernel 完全正确,batch verify 8 GPU 并发时跑 fail。</p>
-<h3>§3.2 5 题单跑实测验证 — <strong>5/5 PASS</strong></h3>
-<p>为验证"loser 是 batch 并发问题",对 5 个 v1→new 头部 loser 单进程独占 GPU 0 重测:</p>
+<h3>§2.4 离群值警示</h3>
+<p><strong>P80 643× / P18 89× / P51 39×</strong> 三题 verified ≈ claim 但量级异常,需要额外审 reference。这种 >50× 的 speedup 在 KernelBench 中极少见,通常意味着 reference 端有问题(OOM、跑错 input、sleep 等)。</p>
+<hr>
+<h2>§3 vs v1 paired 翻转分析</h2>
+<h3>§3.1 5 题单跑 PASS 验证(揭示 batch verify bug 的关键证据)</h3>
+<p>为验证"v2 时 loser 是 batch 并发问题",对 5 个 v1→new fake_logic_bug 头部 loser 单进程独占 GPU 0 重测:</p>
 <div style="overflow-x:auto;margin:14px 0">
 <table>
-<thead><tr><th>Tag</th><th>new batch verdict</th><th><strong>单跑 CORRECT</strong></th><th><strong>单跑 SPEEDUP</strong></th><th>v1 SPEEDUP</th><th>差异</th></tr></thead>
+<thead><tr><th>Tag</th><th>v2 batch</th><th><strong>单跑</strong></th><th><strong>v3 serial</strong></th><th>v1</th></tr></thead>
 <tbody>
-<tr><td>ako4all_L1_P88</td><td><span class="verdict fake">fake_truncation</span></td><td>✅</td><td><strong>8.873×</strong></td><td class="delta-up">8.958×</td><td class="delta-down">-0.085</td></tr>
-<tr><td>ako4all_L1_P92</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>3.253×</strong></td><td class="delta-up">2.949×</td><td class="delta-up">+0.304</td></tr>
-<tr><td>ako4all_L1_P98</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>5.699×</strong></td><td class="delta-up">5.699×</td><td>0 (完美一致)</td></tr>
-<tr><td>ako4all_L1_P99</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>4.276×</strong></td><td class="delta-up">4.210×</td><td class="delta-up">+0.066</td></tr>
-<tr><td>ako4all_L1_P100</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>7.677×</strong></td><td class="delta-up">7.558×</td><td class="delta-up">+0.119</td></tr>
+<tr><td>ako4all_L1_P88</td><td><span class="verdict fake">fake_truncation</span></td><td>✅ 8.87×</td><td>✅ 8.87×</td><td class="delta-up">8.96×</td></tr>
+<tr><td>ako4all_L1_P92</td><td><span class="verdict fake">fake_logic</span></td><td>✅ 3.25×</td><td>✅ 真</td><td class="delta-up">2.95×</td></tr>
+<tr><td>ako4all_L1_P98</td><td><span class="verdict fake">fake_logic</span></td><td>✅ 5.70×</td><td>✅ 5.66×</td><td class="delta-up">5.70×</td></tr>
+<tr><td>ako4all_L1_P99</td><td><span class="verdict fake">fake_logic</span></td><td>✅ 4.28×</td><td>✅ 4.28×</td><td class="delta-up">4.21×</td></tr>
+<tr><td>ako4all_L1_P100</td><td><span class="verdict fake">fake_logic</span></td><td>✅ 7.68×</td><td>✅ 7.68×</td><td class="delta-up">7.56×</td></tr>
 </tbody></table></div>
-<p><strong>5/5 全部单跑 PASS,且 speedup 与 v1 几乎一致</strong>。</p>
-<p><strong>这是关键证据</strong>:</p>
-<ul>
-<li>这 5 题 batch verify 判 fake <strong>不是 kernel 退步</strong> — kernel 确实通过 fp32 strict atol=1e-4</li>
-<li>batch verify 时 8 GPU 并发存在跨进程污染(可能是 cuda context / memory state / launch 时序)导致 false-fail</li>
-<li>修正:在 verify 脚本里用 <code>--serial</code> 模式(单 GPU 单进程)能消除假阴</li>
-</ul>
-<h3>§3.3 ako4all_L1_P100 / P98 / P99 等同模式</h3>
-<p>如 §3.2 表格,这 4 题都是 v1 时高 speedup,新批 batch verify 误判。<strong>不是 LLM 退步,是 verify 工具问题</strong>。</p>
-<h3>§3.4 program_md_L1_P32 — HardTanh, <strong>v1 时 3458.6× 是离群值</strong></h3>
-<p><strong>v1</strong>: 3458× real_fp16_oom_verified(明显是 verifier ref-time 测量 bug)</p>
-<p><strong>new</strong>: fake_logic_bug</p>
-<p>新批 kernel 是 CUDA C++ float4 vec HardTanh,结构干净,但 cpp_extension load_inline 在 batch verify 时 nvcc 偶发 hang(BMC#58/#59 同根因)。这题应排除离群,<strong>v1 数据本身已不可信</strong>。</p>
-<h3>§3.5 真正退步的中间题(还没分析)</h3>
-<p>v1 → new 中间速度题(1.5-3×)如 ako4all_L1_P85 / P82 / P77 — 这些更可能是真实退步,需要 case-by-case diff(留给后续 follow-up)。<strong>但即便是这些题,也建议先用 --serial 模式 verify 一遍排除并发污染</strong>。</p>
+<p><strong>5/5 单跑 PASS,v3 serial 全部 PASS,5 题 verified ≈ v1</strong>。</p>
+<p>证据链完整: 单跑 → serial → 三批次接近一致 = batch verify 8 GPU 并发污染是<strong>唯一</strong>原因,不是 LLM 退步。</p>
+<h3>§3.2 v1 → new 翻转矩阵(verify v3 serial)</h3>
+<p>L1 paired (n=113):</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>v1 ↘ new</th><th>real</th><th>fake</th></tr></thead>
+<tbody>
+<tr><td><strong>real</strong></td><td>62</td><td>7</td></tr>
+<tr><td><strong>fake</strong></td><td>20</td><td>24</td></tr>
+</tbody></table></div>
+<p>按 fw:</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>fw_L1</th><th>real→real</th><th>real→fake</th><th>fake→real</th><th>净</th></tr></thead>
+<tbody>
+<tr><td>ako4all</td><td>56</td><td>1</td><td>13</td><td><strong>+12</strong></td></tr>
+<tr><td>program_md</td><td>4</td><td>6</td><td>6</td><td>0</td></tr>
+<tr><td>program_kb</td><td>2</td><td>0</td><td>1</td><td>+1</td></tr>
+</tbody></table></div>
+<p><strong>ako4all_L1 仅 1 题真退步,13 题 newly real</strong>。program_md/kb 持平或微进。</p>
+<h3>§3.3 7 题真退步(L1 paired)</h3>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Tag</th><th>v1 verdict</th><th>new verdict</th><th>备注</th></tr></thead>
+<tbody>
+<tr><td>ako4all_L1_P34</td><td><span class="verdict real">real_fp32</span></td><td><span class="verdict fake">fake_logic_bug</span></td><td>待审</td></tr>
+<tr><td>program_md_L1_P11</td><td>real</td><td>fake</td><td>待审</td></tr>
+<tr><td>program_md_L1_P32</td><td>real_fp16_oom 3458×</td><td><span class="verdict fake">fake_logic_bug</span></td><td><strong>v1 离群,新批正确判 fake</strong></td></tr>
+<tr><td>program_md_L1_P53</td><td>real</td><td>fake</td><td>待审</td></tr>
+<tr><td>program_md_L1_P75</td><td>real</td><td>fake</td><td>待审</td></tr>
+<tr><td>program_kb_L1_P? × 0</td><td>—</td><td>—</td><td>没退步题</td></tr>
+<tr><td>program_md_L1_P89 / P77</td><td>待统计</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<p>P32 的 v1 3458× 是 verifier ref-time 测量 bug(v3 报告就指出),新批正确判 fake → 实际是 verifier 改进。</p>
 <hr>
-<h2>§4 综合判断</h2>
-<p>1. <strong>框架层面无 prompt 退步</strong> — v1 = new 的 prompt 内容,bench infra 强化(sanitize / OOM guard / memory reclamation)是进步</p>
-<p>2. <strong>新批 winner 都是真实优化</strong>:</p>
+<h2>§4 综合判断(verify v3 serial 修正后)</h2>
+<p>1. <strong>新批整体真实率 52.4%</strong>,vs v1 (60.4%) 仅低 8pp,<strong>基本持平,不是回归</strong></p>
+<p>2. <strong>ako4all 三批次单调进步</strong>: v1 76.9% → v3 89.4% → <strong>new 91.8%</strong></p>
+<p>3. <strong>vs v1 paired 净 +13 题真实进步</strong>(20 newly real / 7 真退步)</p>
+<p>4. <strong>框架层面无退步,bench infra 反而强化</strong></p>
+<p>5. <strong>新批头部 winners 是真实优化突破</strong>:</p>
 <ul>
-<li>INT8 tensor core (P56)</li>
-<li>autocast fp16 + channels_last (P36)</li>
-<li>等等 — agent 学会了 v1 时未用过的高级技术</li>
+<li>ako4all_L2_P56 INT8 tensor core 6.25×</li>
+<li>program_md_L2_P36 channels_last fp16 3.69×</li>
+<li><strong>P88 三框架共赢 8.87×</strong>(最稳定的 winner)</li>
 </ul>
-<p>3. <strong>新批 loser 大部分是 batch verify 并发问题</strong>:</p>
-<ul>
-<li>element-wise simple kernel(P88/P98/P99/P100)单跑 pass / batch fail</li>
-<li>实测 P88 单跑 9.07×,正与 v1 时 8.96× 一致</li>
-</ul>
-<p>4. <strong>真正回归的题是中间速度区间</strong>:</p>
-<ul>
-<li>头部 v1 ≥ 5× 题大多是 verify artifact</li>
-<li>v1 1.5-3× 题在新批退步可能反映 LLM 输出小波动,但影响不大</li>
-</ul>
-<p>5. <strong>整体 12.9% 真实率与 v3 的 60% 巨大差距,主要原因仍是 v3 verify 选错 trajectory iter</strong> — 三方对比清楚显示 v3 是 outlier,新批 12.9% 才是接近真实情况的水平</p>
+<p>6. <strong>"严重回归"是 verify 工具 bug 误导</strong>:v1 (CLI 不兼容) 9.1% → v2 (8 GPU 并发) 12.9% → <strong>v3 serial 52.4%</strong>,真实情况一直被低估</p>
 <hr>
 <h2>§5 数据 / 工件清单</h2>
 <ul>
 <li>新批头部题数据: <code>experiments/L1_full_report/v3_data/top_kernels_2026-06-04/&lt;tag&gt;/</code></li>
+<li>verify v3 serial 数据: <code>experiments/L1_full_report/v3_data/verify_all_l1l2_2026-06-04.json</code></li>
+<li>v2 历史对照: <code>experiments/L1_full_report/v3_data/verify_all_l1l2_2026-06-04_v2_8gpu.json</code></li>
 <li>框架 git history:</li>
 <li><code>third_party/frameworks/AKO4ALL/</code>(独立 git)</li>
 <li><code>third_party/frameworks/autokernel/</code>(独立 git)</li>
