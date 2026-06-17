@@ -229,17 +229,33 @@ li { margin: 4px 0; }
 <p>    tl.store(out_ptr + offsets, result, mask=mask)</p>
 <p>```</p>
 <p><strong>实测</strong>: 单跑 <code>python bench.py --solution kernel.py --precision float32</code> 得到 <strong>CORRECT: True / SPEEDUP: 9.07×</strong> — kernel 完全正确,batch verify 8 GPU 并发时跑 fail。</p>
-<p><strong>结论</strong>: P88 (以及类似 ako4all_L1_P98/P99/P100/P92/P94 — 它们都是 simple element-wise kernel)的 fake 判决是 <strong>batch verify 并发污染</strong>,不是 kernel 退步。需要在 verify 脚本里加单 GPU serialization 才能稳定复测。</p>
-<h3>§3.2 program_md_L1_P32 — HardTanh, <strong>v1 时 3458.6× 是离群值</strong></h3>
+<h3>§3.2 5 题单跑实测验证 — <strong>5/5 PASS</strong></h3>
+<p>为验证"loser 是 batch 并发问题",对 5 个 v1→new 头部 loser 单进程独占 GPU 0 重测:</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Tag</th><th>new batch verdict</th><th><strong>单跑 CORRECT</strong></th><th><strong>单跑 SPEEDUP</strong></th><th>v1 SPEEDUP</th><th>差异</th></tr></thead>
+<tbody>
+<tr><td>ako4all_L1_P88</td><td><span class="verdict fake">fake_truncation</span></td><td>✅</td><td><strong>8.873×</strong></td><td class="delta-up">8.958×</td><td class="delta-down">-0.085</td></tr>
+<tr><td>ako4all_L1_P92</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>3.253×</strong></td><td class="delta-up">2.949×</td><td class="delta-up">+0.304</td></tr>
+<tr><td>ako4all_L1_P98</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>5.699×</strong></td><td class="delta-up">5.699×</td><td>0 (完美一致)</td></tr>
+<tr><td>ako4all_L1_P99</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>4.276×</strong></td><td class="delta-up">4.210×</td><td class="delta-up">+0.066</td></tr>
+<tr><td>ako4all_L1_P100</td><td><span class="verdict fake">fake_logic</span></td><td>✅</td><td><strong>7.677×</strong></td><td class="delta-up">7.558×</td><td class="delta-up">+0.119</td></tr>
+</tbody></table></div>
+<p><strong>5/5 全部单跑 PASS,且 speedup 与 v1 几乎一致</strong>。</p>
+<p><strong>这是关键证据</strong>:</p>
+<ul>
+<li>这 5 题 batch verify 判 fake <strong>不是 kernel 退步</strong> — kernel 确实通过 fp32 strict atol=1e-4</li>
+<li>batch verify 时 8 GPU 并发存在跨进程污染(可能是 cuda context / memory state / launch 时序)导致 false-fail</li>
+<li>修正:在 verify 脚本里用 <code>--serial</code> 模式(单 GPU 单进程)能消除假阴</li>
+</ul>
+<h3>§3.3 ako4all_L1_P100 / P98 / P99 等同模式</h3>
+<p>如 §3.2 表格,这 4 题都是 v1 时高 speedup,新批 batch verify 误判。<strong>不是 LLM 退步,是 verify 工具问题</strong>。</p>
+<h3>§3.4 program_md_L1_P32 — HardTanh, <strong>v1 时 3458.6× 是离群值</strong></h3>
 <p><strong>v1</strong>: 3458× real_fp16_oom_verified(明显是 verifier ref-time 测量 bug)</p>
 <p><strong>new</strong>: fake_logic_bug</p>
 <p>新批 kernel 是 CUDA C++ float4 vec HardTanh,结构干净,但 cpp_extension load_inline 在 batch verify 时 nvcc 偶发 hang(BMC#58/#59 同根因)。这题应排除离群,<strong>v1 数据本身已不可信</strong>。</p>
-<h3>§3.3 ako4all_L1_P100 — v1 7.56× → new fake_logic_bug</h3>
-<p>P100 是 HingeLoss(简单 element-wise),与 P88 / P98 同模式 — Triton element-wise kernel,batch 并发时 fail。</p>
-<h3>§3.4 ako4all_L1_P98 / P99 — v1 5.7×/4.2× → new fake</h3>
-<p>同上模式。<strong>v1 → new 的"头部 loser"全是 element-wise 简单 kernel</strong>,排除 P32 离群后所有 v1 ≥ 4× loser 都是同一 batch verify 问题。</p>
 <h3>§3.5 真正退步的中间题(还没分析)</h3>
-<p>v1 → new 中间速度题(1.5-3×)如 ako4all_L1_P85 / P82 / P77 — 这些更可能是真实退步,需要 case-by-case diff(留给后续 follow-up)。</p>
+<p>v1 → new 中间速度题(1.5-3×)如 ako4all_L1_P85 / P82 / P77 — 这些更可能是真实退步,需要 case-by-case diff(留给后续 follow-up)。<strong>但即便是这些题,也建议先用 --serial 模式 verify 一遍排除并发污染</strong>。</p>
 <hr>
 <h2>§4 综合判断</h2>
 <p>1. <strong>框架层面无 prompt 退步</strong> — v1 = new 的 prompt 内容,bench infra 强化(sanitize / OOM guard / memory reclamation)是进步</p>
