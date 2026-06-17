@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v1 / v3 / 新批 — 三方对比 · 2026-06-04 batch</title>
+
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff;
+  --border: #e2e5ea; --text: #1a1d23; --dim: #4b5263; --muted: #8b92a0;
+  --accent: #2563eb; --green: #10b981; --red: #ef4444;
+  --orange: #f97316; --indigo: #6366f1; --amber: #f59e0b;
+  --rose: #f43f5e; --table-header: #f1f3f6;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --code-bg: #f4f5f7; --code-text: #1e293b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto,
+  "Helvetica Neue", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14.5px; line-height: 1.6; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; background: var(--code-bg); padding: 1px 6px;
+  border-radius: 4px; border: 1px solid var(--border); color: var(--code-text); }
+h1, h2, h3 { color: var(--text); font-weight: 600; }
+h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
+h2 { font-size: 22px; margin: 40px 0 14px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+h3 { font-size: 16px; margin: 24px 0 10px; color: var(--dim); }
+.container { max-width: 1180px; margin: 0 auto; padding: 32px 24px 96px; }
+.hero { background: linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0f9ff 100%);
+  border: 1px solid var(--border); border-radius: 14px; padding: 28px 32px;
+  margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+.hero .meta { color: var(--dim); font-size: 13.5px; margin-top: 4px; }
+.hero .meta strong { color: var(--text); font-weight: 500; }
+.kpi { display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; margin-top: 24px; }
+.kpi-card { background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.kpi-card .label { color: var(--dim); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 6px; }
+.kpi-card .value { font-size: 28px; font-weight: 700; line-height: 1; }
+.kpi-card .sub { color: var(--dim); font-size: 12.5px; margin-top: 4px; }
+.kpi-card.green { border-top: 3px solid var(--green); }
+.kpi-card.red { border-top: 3px solid var(--red); }
+.kpi-card.amber { border-top: 3px solid var(--amber); }
+.kpi-card.rose { border-top: 3px solid var(--rose); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table th, table td { padding: 8px 10px; border-bottom: 1px solid var(--border);
+  text-align: left; vertical-align: top; }
+table th { color: var(--dim); font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.04em; background: var(--table-header); }
+table tr:hover td { background: rgba(37, 99, 235, 0.04); }
+.dim { color: var(--dim); }
+.verdict { display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 500; line-height: 1.5;
+  border: 1px solid currentColor; opacity: 0.95; }
+.verdict.real { color: var(--green); }
+.verdict.fake { color: var(--red); }
+.delta-bigup { color: var(--green); font-weight: 700; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--orange); }
+.delta-bigdown { color: var(--red); font-weight: 700; }
+.warn { background: #fef3c7; border-left: 4px solid var(--amber);
+  padding: 10px 16px; border-radius: 6px; margin: 16px 0; font-size: 13.5px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+ul { padding-left: 22px; }
+li { margin: 4px 0; }
+.footer { color: var(--muted); font-size: 12.5px; margin-top: 64px;
+  padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-bar { background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 10px 24px; font-size: 13px; color: var(--muted); }
+.nav-bar a { color: var(--accent); }
+.nav-bar .crumbs { max-width: 1180px; margin: 0 auto; }
+</style>
+
+</head>
+<body>
+
+<div class="nav-bar"><div class="crumbs">
+  <a href="../index.html">&larr; 首页</a> &middot;
+  <a href="../l1/">L1 老报告</a> &middot;
+  <a href="../l1_v3/">L1 v3 Delta</a> &middot;
+  <a href="../l2/">L2 报告</a> &middot;
+  <a href="index.html">L1L2 2026-06-04</a>
+<a href="index.html">v1 vs new</a> &middot; <a href="three_way.html">三方对比</a> &middot; <a href="standalone.html">新批独立</a> &middot; <a href="v3_delta.html">vs v3 delta</a></div></div>
+<div class="container">
+<div class="hero"><h1>三方对比</h1><div class="meta">v1 (5/1) · v3 (5/27) · new (6/04-16) 三批次同一 verifier 的逐题对比</div>
+<div class="kpi">
+  <div class="kpi-card green">
+    <div class="label">三方一致 real</div>
+    <div class="value">17</div>
+    <div class="sub">高置信度 baseline (全 ako4all_L1)</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="label">v1✅ v3✅ new❌</div>
+    <div class="value">35</div>
+    <div class="sub">真正回归证据(ako4all_L1)</div>
+  </div>
+  <div class="kpi-card rose">
+    <div class="label">v3 newly-real</div>
+    <div class="value">+18 (1 stable)</div>
+    <div class="sub">仅 1 个在新批保留</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="label">v3→new real→fake</div>
+    <div class="value">156</div>
+    <div class="sub">v3 verifier 噪声主导</div>
+  </div>
+</div>
+</div>
+<p><strong>Date</strong>: 2026-06-17 · <strong>Runs</strong>: v1 (2026-05-01) · v3 (2026-05-22→27) · new (2026-06-04→16)</p>
+<p><strong>Verifier</strong>: 同 <code>verify_three_tier_l2.py</code> 系列,fp32 atol/rtol=1e-4 strict</p>
+<h2>数据规模</h2>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Source</th><th>n records</th><th>范围</th></tr></thead>
+<tbody>
+<tr><td>v1 (5/1)</td><td>146</td><td>ako4all L1 only</td></tr>
+<tr><td>v3 L1 (5/27)</td><td>286</td><td>三框架 L1</td></tr>
+<tr><td>v3 L2 (5/?)</td><td>108</td><td>主要 ako4all L2</td></tr>
+<tr><td>新批 (6/04-16)</td><td>481</td><td>三框架 L1+L2</td></tr>
+<tr><td>唯一 tag 总数</td><td>562</td><td></td></tr>
+</tbody></table></div>
+<h2>真实率三方对比</h2>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>fw_L</th><th>v1 real/total</th><th>v1 %</th><th>v3 real/total</th><th>v3 %</th><th>new real/total</th><th>new %</th></tr></thead>
+<tbody>
+<tr><td><strong>ako4all_L1</strong></td><td>70/91</td><td>76.9%</td><td>84/94</td><td>89.4%</td><td>20/85</td><td>23.5%</td></tr>
+<tr><td><strong>ako4all_L2</strong></td><td>0/0</td><td>0.0%</td><td>74/89</td><td>83.1%</td><td>24/93</td><td>25.8%</td></tr>
+<tr><td><strong>program_kb_L1</strong></td><td>8/29</td><td>27.6%</td><td>32/96</td><td>33.3%</td><td>0/70</td><td>0.0%</td></tr>
+<tr><td><strong>program_kb_L2</strong></td><td>0/0</td><td>0.0%</td><td>1/10</td><td>10.0%</td><td>0/77</td><td>0.0%</td></tr>
+<tr><td><strong>program_md_L1</strong></td><td>11/26</td><td>42.3%</td><td>39/96</td><td>40.6%</td><td>0/71</td><td>0.0%</td></tr>
+<tr><td><strong>program_md_L2</strong></td><td>0/0</td><td>0.0%</td><td>3/9</td><td>33.3%</td><td>0/85</td><td>0.0%</td></tr>
+</tbody></table></div>
+<h2>三方翻转矩阵</h2>
+<p>分类四种 trajectory(以最后两次 v3→new 为主,兼顾 v1):</p>
+<p>v3→new paired (n=315):</p>
+<ul>
+<li>real → real: 37</li>
+<li>real → fake: <strong>156</strong> ⚠️</li>
+<li>fake → real: 2</li>
+<li>fake → fake: 120</li>
+</ul>
+<p>ako4all_L1 三方都有数据 (n=72):</p>
+<ul>
+<li>v1✅ v3✅ new❌: 35</li>
+<li>v1✅ v3✅ new✅: 17</li>
+<li>v1❌ v3✅ new❌: 13</li>
+<li>v1❌ v3❌ new❌: 4</li>
+<li>v1✅ v3❌ new❌: 2</li>
+<li>v1❌ v3✅ new✅: 1</li>
+</ul>
+<h2>头部速度变化 (paired tags 三方都 real)</h2>
+<p>三方都 real_fp32/fp16_oom 的题: 17 (全部 ako4all_L1)</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Tag</th><th>v1</th><th>v3</th><th>new</th><th>v3-v1</th><th>new-v3</th></tr></thead>
+<tbody>
+<tr><td>ako4all_L1_P2</td><td>1.265×</td><td class="delta-up">1.963×</td><td class="delta-up">2.503×</td><td class="delta-bigup">+0.698×</td><td class="delta-bigup">+0.540×</td></tr>
+<tr><td>ako4all_L1_P70</td><td class="delta-up">2.572×</td><td class="delta-up">2.412×</td><td class="delta-up">2.158×</td><td class="delta-down">-0.160×</td><td class="delta-down">-0.254×</td></tr>
+<tr><td>ako4all_L1_P14</td><td class="delta-up">3.917×</td><td>1.030×</td><td class="delta-up">2.087×</td><td class="delta-bigdown">-2.887×</td><td class="delta-bigup">+1.057×</td></tr>
+<tr><td>ako4all_L1_P77</td><td class="delta-up">1.752×</td><td>1.141×</td><td class="delta-up">1.718×</td><td class="delta-bigdown">-0.611×</td><td class="delta-bigup">+0.577×</td></tr>
+<tr><td>ako4all_L1_P66</td><td class="delta-up">1.657×</td><td class="delta-up">1.632×</td><td class="delta-up">1.586×</td><td class="delta-down">-0.025×</td><td class="delta-down">-0.046×</td></tr>
+<tr><td>ako4all_L1_P6</td><td>1.461×</td><td class="delta-up">1.568×</td><td class="delta-up">1.558×</td><td class="delta-up">+0.107×</td><td class="delta-down">-0.010×</td></tr>
+<tr><td>ako4all_L1_P10</td><td class="delta-up">1.528×</td><td class="delta-up">2.100×</td><td class="delta-up">1.536×</td><td class="delta-bigup">+0.572×</td><td class="delta-bigdown">-0.564×</td></tr>
+<tr><td>ako4all_L1_P3</td><td class="delta-up">2.564×</td><td class="delta-up">2.654×</td><td class="delta-up">1.525×</td><td class="delta-up">+0.090×</td><td class="delta-bigdown">-1.129×</td></tr>
+<tr><td>ako4all_L1_P17</td><td class="delta-up">2.420×</td><td>1.429×</td><td>1.435×</td><td class="delta-bigdown">-0.992×</td><td class="delta-up">+0.007×</td></tr>
+<tr><td>ako4all_L1_P16</td><td class="delta-up">2.035×</td><td class="delta-up">1.967×</td><td>1.197×</td><td class="delta-down">-0.068×</td><td class="delta-bigdown">-0.770×</td></tr>
+<tr><td>ako4all_L1_P78</td><td>1.409×</td><td>1.479×</td><td>1.080×</td><td class="delta-up">+0.069×</td><td class="delta-down">-0.399×</td></tr>
+<tr><td>ako4all_L1_P11</td><td class="delta-down">0.947×</td><td class="delta-down">0.995×</td><td>1.053×</td><td class="delta-up">+0.049×</td><td class="delta-up">+0.058×</td></tr>
+<tr><td>ako4all_L1_P12</td><td>1.004×</td><td>1.016×</td><td>1.001×</td><td class="delta-up">+0.012×</td><td class="delta-down">-0.015×</td></tr>
+<tr><td>ako4all_L1_P1</td><td>1.454×</td><td>1.000×</td><td>1.000×</td><td class="delta-down">-0.454×</td><td class="delta-down">+0.000×</td></tr>
+<tr><td>ako4all_L1_P13</td><td>1.454×</td><td class="delta-down">0.700×</td><td>1.000×</td><td class="delta-bigdown">-0.754×</td><td class="delta-up">+0.300×</td></tr>
+</tbody></table></div>
+<h2>v3 时被 verify 为 newly-real,新批跑成 fake 的题 (Top 20 by v3 speedup)</h2>
+<p>这些是 v3 报告的『覆盖面增长』亮点,在新批被推翻:</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Tag</th><th>v1 verdict</th><th>v3 verdict (speedup)</th><th>new verdict</th></tr></thead>
+<tbody>
+<tr><td>ako4all_L2_P18</td><td>—</td><td>real_fp32 (92.759×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>ako4all_L1_P88</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (8.848×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_md_L1_P88</td><td>—</td><td>real_fp32 (8.774×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_md_L1_P40</td><td>—</td><td>real_fp32 (7.778×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_kb_L1_P100</td><td>—</td><td>real_fp32 (7.647×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>ako4all_L1_P100</td><td><span class="verdict real">real_fp32</span></td><td>real_fp16_oom_verified (7.558×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>ako4all_L1_P98</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (5.750×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_md_L1_P3</td><td>—</td><td>real_fp32 (4.293×)</td><td><span class="verdict fake">fake_precision_cheat</span></td></tr>
+<tr><td>ako4all_L1_P99</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (4.210×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_md_L1_P91</td><td><span class="verdict fake">fake_logic_bug</span></td><td>real_fp32 (3.290×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_md_L1_P94</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (3.216×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>ako4all_L1_P30</td><td>—</td><td>real_fp32 (3.197×)</td><td><span class="verdict fake">fake_or_broken</span></td></tr>
+<tr><td>ako4all_L1_P92</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (3.166×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_md_L1_P41</td><td>—</td><td>real_fp16_oom_verified (2.988×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>ako4all_L1_P58</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (2.849×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>program_kb_L1_P81</td><td>—</td><td>real_fp32 (2.692×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+<tr><td>ako4all_L2_P9</td><td>—</td><td>real_fp32 (2.543×)</td><td><span class="verdict fake">fake_precision_cheat</span></td></tr>
+<tr><td>ako4all_L1_P25</td><td><span class="verdict fake">fake_or_broken</span></td><td>real_fp16_oom_verified (2.392×)</td><td><span class="verdict fake">fake_or_broken</span></td></tr>
+<tr><td>ako4all_L1_P81</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (2.387×)</td><td><span class="verdict fake">fake_truncation_or_precision</span></td></tr>
+<tr><td>ako4all_L1_P59</td><td><span class="verdict real">real_fp32</span></td><td>real_fp32 (2.322×)</td><td><span class="verdict fake">fake_logic_bug</span></td></tr>
+</tbody></table></div>
+<h2>三方一致 real 的题(高置信度真实)</h2>
+<p>共 17 题(全部 ako4all_L1,因 v1 只覆盖此组)。这些是跨三批次稳定真实的样本。</p>
+<h2>关键观察</h2>
+<p>1. <strong>v1→v3 ako4all_L1 真实率从 76.9% (89/146 等) → 89.4%(84/94),v3 报告称为'retest17 + harness fix' 收益</strong></p>
+<p>2. <strong>v3→new ako4all_L1: 89.4% → 23.5%</strong>,156 paired tag 翻 fake</p>
+<p>3. <strong>v3 时的 'newly-real' wins(<code>program_md_L1_P88 8.77×</code> 等)在新批全部翻 fake_logic_bug</strong> — v3 verifier 可能高估了真实率,新批是更接近真实情况的数字</p>
+<p>4. <strong>跨 v1/v3/new 三方一致 real 的题最可信</strong> — 这是真正的稳定 baseline,数量见上</p>
+<div class="footer">
+Generated from <code>L1_full_report/build_html_l1l2_2026_06_04.py</code> ·
+Data: <code>v3_data/verify_all_l1l2_2026-06-04.json</code> (481 verdicts) ·
+Source markdown: <code>L1_full_report/L1L2_*_2026-06-04*.md</code>
+</div>
+</div>
+</body>
+</html>

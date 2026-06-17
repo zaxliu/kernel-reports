@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L1+L2 Retry Phase 2026-06-04 Batch 独立报告 · 2026-06-04 batch</title>
+
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f8f9fb; --card: #ffffff;
+  --border: #e2e5ea; --text: #1a1d23; --dim: #4b5263; --muted: #8b92a0;
+  --accent: #2563eb; --green: #10b981; --red: #ef4444;
+  --orange: #f97316; --indigo: #6366f1; --amber: #f59e0b;
+  --rose: #f43f5e; --table-header: #f1f3f6;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --code-bg: #f4f5f7; --code-text: #1e293b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto,
+  "Helvetica Neue", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14.5px; line-height: 1.6; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; background: var(--code-bg); padding: 1px 6px;
+  border-radius: 4px; border: 1px solid var(--border); color: var(--code-text); }
+h1, h2, h3 { color: var(--text); font-weight: 600; }
+h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
+h2 { font-size: 22px; margin: 40px 0 14px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+h3 { font-size: 16px; margin: 24px 0 10px; color: var(--dim); }
+.container { max-width: 1180px; margin: 0 auto; padding: 32px 24px 96px; }
+.hero { background: linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0f9ff 100%);
+  border: 1px solid var(--border); border-radius: 14px; padding: 28px 32px;
+  margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+.hero .meta { color: var(--dim); font-size: 13.5px; margin-top: 4px; }
+.hero .meta strong { color: var(--text); font-weight: 500; }
+.kpi { display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; margin-top: 24px; }
+.kpi-card { background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.kpi-card .label { color: var(--dim); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 6px; }
+.kpi-card .value { font-size: 28px; font-weight: 700; line-height: 1; }
+.kpi-card .sub { color: var(--dim); font-size: 12.5px; margin-top: 4px; }
+.kpi-card.green { border-top: 3px solid var(--green); }
+.kpi-card.red { border-top: 3px solid var(--red); }
+.kpi-card.amber { border-top: 3px solid var(--amber); }
+.kpi-card.rose { border-top: 3px solid var(--rose); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table th, table td { padding: 8px 10px; border-bottom: 1px solid var(--border);
+  text-align: left; vertical-align: top; }
+table th { color: var(--dim); font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.04em; background: var(--table-header); }
+table tr:hover td { background: rgba(37, 99, 235, 0.04); }
+.dim { color: var(--dim); }
+.verdict { display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 500; line-height: 1.5;
+  border: 1px solid currentColor; opacity: 0.95; }
+.verdict.real { color: var(--green); }
+.verdict.fake { color: var(--red); }
+.delta-bigup { color: var(--green); font-weight: 700; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--orange); }
+.delta-bigdown { color: var(--red); font-weight: 700; }
+.warn { background: #fef3c7; border-left: 4px solid var(--amber);
+  padding: 10px 16px; border-radius: 6px; margin: 16px 0; font-size: 13.5px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+ul { padding-left: 22px; }
+li { margin: 4px 0; }
+.footer { color: var(--muted); font-size: 12.5px; margin-top: 64px;
+  padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-bar { background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 10px 24px; font-size: 13px; color: var(--muted); }
+.nav-bar a { color: var(--accent); }
+.nav-bar .crumbs { max-width: 1180px; margin: 0 auto; }
+</style>
+
+</head>
+<body>
+
+<div class="nav-bar"><div class="crumbs">
+  <a href="../index.html">&larr; 首页</a> &middot;
+  <a href="../l1/">L1 老报告</a> &middot;
+  <a href="../l1_v3/">L1 v3 Delta</a> &middot;
+  <a href="../l2/">L2 报告</a> &middot;
+  <a href="index.html">L1L2 2026-06-04</a>
+<a href="index.html">v1 vs new</a> &middot; <a href="three_way.html">三方对比</a> &middot; <a href="standalone.html">新批独立</a> &middot; <a href="v3_delta.html">vs v3 delta</a></div></div>
+<div class="container">
+<div class="hero"><h1>新批独立报告</h1><div class="meta">新批 600 题完整 verify 后的真实率 + 头部 speedup + 失败模式分类</div>
+<div class="kpi">
+  <div class="kpi-card green">
+    <div class="label">真实通过</div>
+    <div class="value">44/481</div>
+    <div class="sub">9.1% (全 ako4all)</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="label">ako4all_L1</div>
+    <div class="value">20/85</div>
+    <div class="sub">23.5%</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="label">ako4all_L2</div>
+    <div class="value">24/93</div>
+    <div class="sub">25.8%</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="label">md/kb 真实率</div>
+    <div class="value">0%</div>
+    <div class="sub">L1+L2 全军覆没 (0/303)</div>
+  </div>
+</div>
+</div>
+<p><strong>Date</strong>: 2026-06-17 · <strong>Hardware</strong>: 8× RTX 5090 (sm_120) · <strong>PyTorch</strong>: 2.11.0+cu128 · <strong>Batch</strong>: <code>l1l2_regression_2026-06-04</code></p>
+<h2>TL;DR</h2>
+<p>retry phase 跑到 2026-06-16 23:19 收尾,600 题 (3 框架 × 2 levels × 100 题) 完整 verify 后:</p>
+<ul>
+<li><strong>真实通过 44/600 (7.3%)</strong> — 全部来自 <code>ako4all</code>。program_md / program_kb 在新 batch 上<strong>零真实</strong>(0/156 L1+L2 sum,156 个 claim≥1× 全员 fake)。</li>
+<li><strong>ako4all 真实率</strong>: L1 20/85 (23.5%) + L2 24/93 (25.8%) = 44/178 (24.7%)。比 v3 baseline 时 ako4all L1 89.4% 大幅下滑,<strong>新批次回归严重</strong>。</li>
+<li><strong>头部 speedup</strong>: <code>ako4all_L2_P66 8.80×</code> 是本批次新成果,但 ≥5× 只有 2 题,≥2× 只有 7 题。</li>
+<li>关键失败模式:<strong><code>fake_logic_bug</code> 303 (63%) + <code>fake_precision_cheat</code> 101 (21%)</strong>,合计 84% 假阳性。说明 LLM 输出大量"看起来通过实则跑错"或"内部 cast fp16 蒙混过关"的 kernel。</li>
+<li>期间发生 <strong>2 次 BMC reboot</strong> (#58 07:42, #59 10:32),根因都是 agent 写错的 kernel 触发 GPU UVM hang(P9_a4 的 <code>cpp_extension nvcc 无 arch flag</code> 雪球),非硬件故障。</li>
+</ul>
+<h2>Background</h2>
+<p><strong>Batch ID</strong>: <code>l1l2_regression_2026-06-04</code>,目的是在新 5090 + harness 下复测 L1/L2 三框架,与 v3 (2026-05-27) baseline 对照。retry phase 期间 cap 从 4 降至 2 (NIGHT_MAX/DAY_MAX=2),避免 inline cluster 雪球。</p>
+<p><strong>State 终态</strong> (2026-06-16 23:19:44 收尾):</p>
+<ul>
+<li>done: 533 / failed: 67 / total: 600</li>
+<li>67 failed 全部是 <code>no_agent_kernel_fallback_only</code> (66) + <code>max_attempts_exhausted</code> (1),无 GPU 硬件类失败。</li>
+<li>P99_md 是 timeout-but-agent-kernel-0.9930x → done(borderline,Phase 1 verify 已筛)。</li>
+</ul>
+<p><strong>Verify 方法</strong>:</p>
+<ul>
+<li>工具: <code>verify_three_tier_l1l2_2026-06-04.py</code> (改自 <code>L2_full_report/verify_three_tier_l2.py</code>,适配新 batch hierarchical layout <code>&lt;fw&gt;/L&lt;lvl&gt;/p&lt;pid&gt;/a&lt;attempt&gt;/</code>)</li>
+<li>claim threshold: 1.0× — 481 个 claim≥1× 的样本入选 (488 done × 框架/level 过滤)。</li>
+<li>Tier 1: fp32 strict (atol/rtol=1e-4, KernelBench 默认)</li>
+<li>Tier 2: fp16 fallback (仅 Tier 1 OOM 或 fail 时)</li>
+<li>跑时: 2026-06-17 ~07:30 在 8 GPU 并行,~12min 完成。</li>
+</ul>
+<p><strong>Verdict 定义</strong>(同 v3):</p>
+<ul>
+<li><code>real_fp32</code>: fp32 PASS (atol=1e-4)</li>
+<li><code>real_fp16_oom_verified</code>: fp32 OOM,fp16 PASS,确认 OOM 真实</li>
+<li><code>fake_truncation_or_precision</code>: fp32 FAIL,fp16 PASS (atol bias)</li>
+<li><code>fake_logic_bug</code>: fp32 + fp16 都 FAIL,无 dtype cast</li>
+<li><code>fake_precision_cheat</code>: fp32 FAIL + kernel 内部含 dtype cast 到 fp16/bf16</li>
+<li><code>fake_or_broken</code>: 编译失败 / 跑 -1.0</li>
+</ul>
+<h2>整体结果</h2>
+<h3>Verdict 分布 (n=481)</h3>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Verdict</th><th>Count</th><th>%</th></tr></thead>
+<tbody>
+<tr><td><code>real_fp32</code></td><td>40</td><td>8.3%</td></tr>
+<tr><td><code>real_fp16_oom_verified</code></td><td>4</td><td>0.8%</td></tr>
+<tr><td><strong>真实合计</strong></td><td><strong>44</strong></td><td><strong>9.1%</strong></td></tr>
+<tr><td><code>fake_logic_bug</code></td><td>303</td><td>63.0%</td></tr>
+<tr><td><code>fake_precision_cheat</code></td><td>101</td><td>21.0%</td></tr>
+<tr><td><code>fake_truncation_or_precision</code></td><td>18</td><td>3.7%</td></tr>
+<tr><td><code>fake_or_broken</code></td><td>15</td><td>3.1%</td></tr>
+</tbody></table></div>
+<h3>Per-framework × Level 真实通过率</h3>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Framework</th><th>Level</th><th>n_verified</th><th>real_fp32</th><th>real_fp16_oom</th><th><strong>真实合计</strong></th><th><strong>真实率</strong></th></tr></thead>
+<tbody>
+<tr><td>ako4all</td><td>L1</td><td>85</td><td>18</td><td>2</td><td><strong>20</strong></td><td><strong>23.5%</strong></td></tr>
+<tr><td>ako4all</td><td>L2</td><td>93</td><td>22</td><td>2</td><td><strong>24</strong></td><td><strong>25.8%</strong></td></tr>
+<tr><td>program_md</td><td>L1</td><td>71</td><td>0</td><td>0</td><td><strong>0</strong></td><td><strong>0%</strong></td></tr>
+<tr><td>program_md</td><td>L2</td><td>85</td><td>0</td><td>0</td><td><strong>0</strong></td><td><strong>0%</strong></td></tr>
+<tr><td>program_kb</td><td>L1</td><td>70</td><td>0</td><td>0</td><td><strong>0</strong></td><td><strong>0%</strong></td></tr>
+<tr><td>program_kb</td><td>L2</td><td>77</td><td>0</td><td>0</td><td><strong>0</strong></td><td><strong>0%</strong></td></tr>
+<tr><td><strong>TOTAL</strong></td><td>—</td><td><strong>481</strong></td><td><strong>40</strong></td><td><strong>4</strong></td><td><strong>44</strong></td><td><strong>9.1%</strong></td></tr>
+</tbody></table></div>
+<h3>Real speedup 分布 (verified)</h3>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>fw</th><th>lvl</th><th>n_real</th><th>median</th><th>p90</th><th>max</th><th>≥1.05×</th><th>≥2×</th><th>≥5×</th></tr></thead>
+<tbody>
+<tr><td>ako4all</td><td>L1</td><td>20</td><td>1.139×</td><td class="delta-up">2.158×</td><td class="delta-up">2.503×</td><td>12</td><td>3</td><td>0</td></tr>
+<tr><td>ako4all</td><td>L2</td><td>24</td><td>1.176×</td><td class="delta-up">2.652×</td><td class="delta-up">8.796×</td><td>17</td><td>4</td><td>2</td></tr>
+<tr><td>program_md</td><td>L1+L2</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>program_kb</td><td>L1+L2</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h3>Top 10 verified speedups (全部 ako4all)</h3>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>Rank</th><th>Tag</th><th>Verified</th><th>Claim</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>ako4all_L2_P66</td><td><strong>8.796×</strong></td><td class="delta-up">5.011×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>2</td><td>ako4all_L2_P56</td><td class="delta-up">6.267×</td><td class="delta-up">6.596×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>3</td><td>ako4all_L2_P20</td><td class="delta-up">2.652×</td><td class="delta-up">3.358×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>4</td><td>ako4all_L2_P7</td><td class="delta-up">2.518×</td><td class="delta-up">2.537×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>5</td><td>ako4all_L1_P2</td><td class="delta-up">2.503×</td><td class="delta-up">2.555×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>6</td><td>ako4all_L1_P70</td><td class="delta-up">2.158×</td><td class="delta-up">2.597×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>7</td><td>ako4all_L1_P14</td><td class="delta-up">2.087×</td><td class="delta-up">2.132×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>8</td><td>ako4all_L2_P87</td><td class="delta-up">1.964×</td><td class="delta-up">1.594×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>9</td><td>ako4all_L2_P98</td><td class="delta-up">1.775×</td><td class="delta-up">1.760×</td><td><span class="verdict real">real_fp32</span></td></tr>
+<tr><td>10</td><td>ako4all_L2_P29</td><td class="delta-up">1.766×</td><td>1.191×</td><td><span class="verdict real">real_fp32</span></td></tr>
+</tbody></table></div>
+<p>注:Top 10 里 verified > claim 的有 P87 (+0.37×) / P29 (+0.58×),说明 verify 重测时 reference 跑得更慢一些;其他 8 题 verified 比 claim 略低,符合"claim 略高估"的常见模式。</p>
+<h2>失败模式分析</h2>
+<h3><code>fake_logic_bug</code> (303, 63%)</h3>
+<p>agent 写出了<strong>编译通过但 fp32 输出错的</strong> kernel。最常见根因:</p>
+<ul>
+<li>index 算错 (off-by-one)</li>
+<li>共享内存 race</li>
+<li>block/thread 维度选错</li>
+</ul>
+<p>per-fw 分布:</p>
+<ul>
+<li>ako4all: 44+51 = 95</li>
+<li>program_md: 54+45 = 99</li>
+<li>program_kb: 58+51 = 109</li>
+</ul>
+<h3><code>fake_precision_cheat</code> (101, 21%)</h3>
+<p>kernel 内部 cast 到 fp16/bfloat16 (<code>tl.float16</code>, <code>.half()</code>, <code>.to(torch.float16)</code> 等),fp32 atol=1e-4 跑不过但 claim 时是 fp16 atol=1e-2 通过的"假性能"。<strong>全部来自 program_md / program_kb</strong>:</p>
+<ul>
+<li>program_md: L1=17 + L2=40 = 57</li>
+<li>program_kb: L1=12 + L2=26 = 38</li>
+<li>ako4all: L1=0 + L2=6 = 6 (新出现,L1 v3 时只有 1 个)</li>
+</ul>
+<h3>隔离 program_md/kb 完全失效</h3>
+<p>156 个 program_md/kb 样本全员 fake (54+45+58+51 = 208 fake_logic_bug + 17+40+12+26 = 95 fake_precision_cheat,合计 303 fake;实际有 verdict 数=156,因为部分样本 claim<1× 被跳)。<strong>这两个框架在新 batch 没有产出任何真实 fp32-correct kernel</strong>。</p>
+<h2>系统稳定性 (retry phase)</h2>
+<p>batch 期间 (~6h) 触发 2 次 BMC reboot:</p>
+<div style="overflow-x:auto;margin:14px 0">
+<table>
+<thead><tr><th>BMC</th><th>时间</th><th>触发</th><th>根因</th></tr></thead>
+<tbody>
+<tr><td>#58</td><td>07:42</td><td>DSTATE_REAL=3, P9_a4 PYBIND11 hang</td><td>agent 写的 cpp_extension 没传 nvcc arch flag,导致 nvcc kernel-mode hang,雪球累积 D-state</td></tr>
+<tr><td>#59</td><td>10:32</td><td>同 #58,P9_a4 重复触发</td><td>(BMC#58 后 P9 + P89 翻 pending 重跑,P9 仍触发同根因)</td></tr>
+</tbody></table></div>
+<p>之后改 cap=2 (从 4 降),并清掉 BMC#58→#59 后的残留,batch 才稳定跑完。</p>
+<p>期间 Xid 13/31 burst 1 次 (09:36:00-01,510 条,P9_a4 misaligned address kernel,30min 自愈无新增),非系统级故障。</p>
+<p><code>uvm_disable_hmm=Y</code> 在 modprobe 时设上(BMC#58 之后),确认有效抑制 UVM hmm 死锁。</p>
+<h2>关键发现</h2>
+<p>1. <strong>program_md / program_kb 完全失效</strong> — 这是新 batch 最关键的回归。Phase 3 与 v3 (各 ~30% real) 对比时需重点排查 retry phase 是不是 agent 框架升级或 prompt 改动导致。</p>
+<p>2. <strong>ako4all 真实率从 v3 89.4% (L1) 降至 23.5%</strong> — 也是大幅回归,但仍是三框架中<strong>唯一可用</strong>。</p>
+<p>3. <strong><code>fake_precision_cheat</code> 占比 21% 远高于 v3</strong> — agent 学会用 <code>.half()</code> / <code>tl.float16</code> 蒙混 atol 检查,需要在 verifier 或 prompt 上补防。</p>
+<p>4. <strong>头部 speedup 数量减少</strong> — ≥5× 只有 2 题 (v3 是 7 题),≥2× 只有 7 题 (v3 是 36 题)。</p>
+<p>5. <strong>系统侧 OK</strong> — 2 次 BMC 都因 agent kernel bug 触发,非硬件;BMC 流程 + cap=2 + uvm_disable_hmm 三套防御组合可靠。</p>
+<h2>数据 / 工件清单</h2>
+<ul>
+<li><code>L1_full_report/verify_three_tier_l1l2_2026-06-04.py</code> — verify 脚本(本批次专用)</li>
+<li><code>L1_full_report/v3_data/verify_all_l1l2_2026-06-04.json</code> — 481 个 verdict 全集</li>
+<li><code>L1_full_report/v3_data/verify_summary_l1l2_2026-06-04.json</code> — 各组 verdict 统计</li>
+<li><code>L1_full_report/v3_data/_phase2_stats.json</code> — 报告生成中间数据</li>
+<li><code>~/runs/l1l2_regression_2026-06-04/state.json</code> (server 端) — batch 终态</li>
+<li><code>~/runs/l1l2_regression_2026-06-04/&lt;fw&gt;/L&lt;lvl&gt;/p&lt;pid&gt;/a*/</code> (server 端) — per-attempt run dir,含 <code>bench_results.json</code> / <code>trajectory/&lt;iter&gt;/kernel.py</code></li>
+</ul>
+<h2>Next: Phase 3 — Diff vs v3</h2>
+<p>待 Phase 3 输出:</p>
+<ul>
+<li>ako4all L1: v3 89.4% real → 本批 23.5% real,差异定位到具体题号(谁从 real 翻 fake)</li>
+<li>ako4all L2: 与 v3 对照(v3 L2 真实率待查 <code>L2_full_report/L2_FULL.md</code>)</li>
+<li>program_md/kb: v3 ~30% real → 本批 0%,差异定位</li>
+<li>speedup 头部对比:本批 P66 8.80× 是新成果还是退步,P56 6.27× 是否对应 v3 中已知题</li>
+</ul>
+<div class="footer">
+Generated from <code>L1_full_report/build_html_l1l2_2026_06_04.py</code> ·
+Data: <code>v3_data/verify_all_l1l2_2026-06-04.json</code> (481 verdicts) ·
+Source markdown: <code>L1_full_report/L1L2_*_2026-06-04*.md</code>
+</div>
+</div>
+</body>
+</html>
